@@ -1,7 +1,6 @@
 package inference
 
 import (
-	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/model"
 	"github.com/gonum/floats"
@@ -9,7 +8,7 @@ import (
 
 // InfAlg defines an inference algorithm
 type InfAlg interface {
-	Run(data.Evidence) float64
+	Run(map[int]int) float64
 	CTNodes() []*model.CTNode
 	CalibPotential(nd *model.CTNode) *factor.Factor
 	UpdatedModel() *model.BNet
@@ -68,7 +67,7 @@ func (c *cTCalib) CalibPotential(nd *model.CTNode) *factor.Factor {
 	return c.calibPot[nd]
 }
 
-func (c *cTCalib) Run(e data.Evidence) float64 {
+func (c *cTCalib) Run(e map[int]int) float64 {
 	c.applyEvidence(e)
 	c.upDownCalibration()
 	// after applying evidence and calibratin
@@ -78,7 +77,7 @@ func (c *cTCalib) Run(e data.Evidence) float64 {
 
 // applyEvidence initialize the potentials with a copy of the original potentials
 // applyed the given evidence
-func (c *cTCalib) applyEvidence(e data.Evidence) {
+func (c *cTCalib) applyEvidence(e map[int]int) {
 	for _, nd := range c.ct.Nodes() {
 		c.initPot[nd] = nd.Potential().Copy().Reduce(e)
 	}

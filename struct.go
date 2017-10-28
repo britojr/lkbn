@@ -39,8 +39,7 @@ func structureLearning() {
 
 	log.Println("Reading parameters file")
 	parms := ioutl.ReadYaml(parmFile)
-	// TODO: dataset will also be nedded when dealing with hidden variables
-	dataSet := new(data.Dataset)
+	dataSet := data.NewDataset(dataFile)
 
 	log.Println("Creating structure learning algorithm")
 	alg := learner.Create(learnerAlg)

@@ -6,9 +6,10 @@ func TestNewIndexFor(t *testing.T) {
 	cases := []struct {
 		indexVars, forVars VarList
 		seq                []int
-	}{
-		{[]*Var{{0, 2}, {5, 3}}, []*Var{{0, 2}, {3, 2}, {5, 3}}, []int{0, 1, 0, 1, 2, 3, 2, 3, 4, 5, 4, 5}},
-	}
+	}{{
+		[]*Var{New(0, 2), New(5, 3)}, []*Var{New(0, 2), New(3, 2), New(5, 3)},
+		[]int{0, 1, 0, 1, 2, 3, 2, 3, 4, 5, 4, 5},
+	}}
 	for _, tt := range cases {
 		ix := NewIndexFor(tt.indexVars, tt.forVars)
 		for i, v := range tt.seq {

@@ -5,7 +5,6 @@ import (
 	"log"
 	"math"
 
-	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/inference"
 	"github.com/britojr/lkbn/model"
@@ -27,7 +26,7 @@ const (
 // EMLearner implements Expectation-Maximization algorithm
 type EMLearner interface {
 	SetProperties(props map[string]string)
-	Run(*model.BNet, data.EvidenceSet) (*model.BNet, float64)
+	Run(*model.BNet, []map[int]int) (*model.BNet, float64)
 }
 
 // implementation of EMLearner
@@ -64,7 +63,7 @@ func (e *emAlg) SetProperties(props map[string]string) {
 }
 
 // start defines a starting point for model's parameters
-func (e *emAlg) start(infalg inference.InfAlg, evset data.EvidenceSet) {
+func (e *emAlg) start(infalg inference.InfAlg, evset []map[int]int) {
 	// TODO: add a non-trivial em (re)start policy
 	// for now, just randomly starts
 	for _, nd := range infalg.CTNodes() {
@@ -73,7 +72,7 @@ func (e *emAlg) start(infalg inference.InfAlg, evset data.EvidenceSet) {
 }
 
 // Run runs EM until convergence or max iteration number is reached
-func (e *emAlg) Run(m *model.BNet, evset data.EvidenceSet) (*model.BNet, float64) {
+func (e *emAlg) Run(m *model.BNet, evset []map[int]int) (*model.BNet, float64) {
 	log.Printf("emlearner: start\n")
 	infalg := inference.NewCTreeCalibration(m)
 	e.nIters = 0
@@ -94,12 +93,12 @@ func (e *emAlg) Run(m *model.BNet, evset data.EvidenceSet) (*model.BNet, float64
 
 // runStep runs expectation and maximization steps
 // returning the loglikelihood of the model with new parameters
-func (e *emAlg) runStep(infalg inference.InfAlg, evset data.EvidenceSet) float64 {
+func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
 	// copy of parameters to hold the sufficient statistics
 	count := make(map[*model.CTNode]*factor.Factor)
 	var ll float64
 	// expecttation step
-	for _, evid := range evset.Observations() {
+	for _, evid := range evset {
 		// evid is a map of var to state
 		evLkhood := infalg.Run(evid)
 		ll += math.Log(evLkhood)

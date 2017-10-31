@@ -44,3 +44,8 @@ func (d *Dataset) IntMaps() []map[int]int {
 	}
 	return ms
 }
+
+// Variables return dataset variables
+func (d *Dataset) Variables() vars.VarList {
+	return d.vs
+}

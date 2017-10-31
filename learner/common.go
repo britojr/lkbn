@@ -10,11 +10,12 @@ import (
 
 // common defines default behaviours
 type common struct {
-	tw int           // treewidth
-	nv int           // number of variables
-	nl int           // number of latent variables
-	ds *data.Dataset // dataset
-	vs vars.VarList  // variables
+	tw      int           // treewidth
+	nv      int           // number of observed variables
+	nl      int           // number of latent variables
+	lstates int           // default number of states of latent variables
+	ds      *data.Dataset // dataset
+	vs      vars.VarList  // variables
 }
 
 func newCommon() *common {
@@ -24,11 +25,14 @@ func newCommon() *common {
 
 func (s *common) SetDataset(ds *data.Dataset) {
 	s.ds = ds
-	// s.vs = ds.Variables()
+	s.vs = make([]*vars.Var, len(ds.Variables()))
+	s.nv = len(ds.Variables())
+	copy(s.vs, ds.Variables())
 }
 
 func (s *common) SetDefaultParameters() {
 	s.tw = 3
+	s.lstates = 2
 }
 
 func (s *common) SetFileParameters(parms map[string]string) {
@@ -37,27 +41,35 @@ func (s *common) SetFileParameters(parms map[string]string) {
 	}
 	if nl, ok := parms[ParmNumLatent]; ok {
 		s.nl = conv.Atoi(nl)
+		s.addLatVars()
 	}
 }
 
 func (s *common) ValidateParameters() {
-	if s.tw <= 0 || s.nv < s.tw+2 {
-		log.Printf("n=%v, tw=%v\n", s.nv, s.tw)
+	if s.tw <= 0 || len(s.vs) < s.tw+2 {
+		log.Printf("n=%v, tw=%v\n", len(s.vs), s.tw)
 		log.Panic("Invalid treewidth! Choose values such that: n >= tw+2 and tw > 0")
 	}
 	if s.nl < 0 {
-		log.Printf("n=%v, tw=%v\n", s.nv, s.tw)
 		log.Panicf("Invalid number of latent variables: '%v'", s.nl)
 	}
 }
 
 func (s *common) PrintParameters() {
 	log.Printf(" ========== ALGORITHM PARAMETERS ================ \n")
-	log.Printf("number of variables: %v\n", s.nv)
+	log.Printf("total number of variables: %v\n", len(s.vs))
 	log.Printf("%v: %v\n", ParmTreewidth, s.tw)
 	log.Printf("%v: %v\n", ParmNumLatent, s.nl)
 }
 
 func (s *common) Treewidth() int {
 	return s.tw
+}
+
+func (s *common) addLatVars() {
+	for i := 0; i < s.nl; i++ {
+		v := vars.New(len(s.vs), s.lstates)
+		v.SetLatent(true)
+		s.vs = append(s.vs, v)
+	}
 }

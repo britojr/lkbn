@@ -81,6 +81,16 @@ func (c *CTree) AddNode(nd *CTNode) {
 	}
 }
 
+// Score return ctree score
+func (c *CTree) Score() float64 {
+	return c.score
+}
+
+// SetScore set ctree score
+func (c *CTree) SetScore(score float64) {
+	c.score = score
+}
+
 // Len return number of nodes in the tree
 func (c *CTree) Len() int {
 	return len(c.nodes)

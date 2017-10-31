@@ -1,6 +1,9 @@
 package model
 
 import (
+	"log"
+	"reflect"
+
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/vars"
 )
@@ -12,6 +15,7 @@ type CTree struct {
 	nodes  []*CTNode
 	root   *CTNode
 	family map[*vars.Var]*CTNode
+	score  float64
 }
 
 // CTNode defines a clique tree node
@@ -39,6 +43,18 @@ func (c *CTree) Nodes() []*CTNode {
 // Families return map of var to family
 func (c *CTree) Families() map[*vars.Var]*CTNode {
 	return c.family
+}
+
+// Better return true if this model is better
+func (c *CTree) Better(other interface{}) bool {
+	if v, ok := other.(CTree); ok {
+		return c.score > v.score
+	}
+	if v, ok := other.(BNet); ok {
+		return c.score > v.score
+	}
+	log.Panicf("ctree: cannot compare to type '%v'", reflect.TypeOf(other))
+	return false
 }
 
 // Variables return node variables

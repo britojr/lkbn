@@ -9,6 +9,7 @@ import (
 // BNet defines a Bayesian network model
 type BNet struct {
 	nodes map[*vars.Var]*BNode
+	score float64
 }
 
 // BNode defines a BN node

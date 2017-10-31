@@ -11,6 +11,7 @@ const (
 type Var struct {
 	id, nstate int
 	name       string
+	latent     bool
 }
 
 // New creates a new variable
@@ -39,6 +40,16 @@ func (v Var) Name() string {
 // SetName set variable name
 func (v Var) SetName(name string) {
 	v.name = name
+}
+
+// Latent return true for latent variable
+func (v Var) Latent() bool {
+	return v.latent
+}
+
+// SetLatent set latent variable
+func (v Var) SetLatent(latent bool) {
+	v.latent = latent
 }
 
 func (v Var) String() string {

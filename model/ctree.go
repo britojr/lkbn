@@ -50,6 +50,29 @@ func SampleUniform(vs vars.VarList, k int) *CTree {
 	return ct
 }
 
+// VarsNeighbors ..
+func (c *CTree) VarsNeighbors() map[*vars.Var]vars.VarList {
+	m := make(map[*vars.Var]vars.VarList)
+	for _, nd := range c.nodes {
+		vs := nd.Variables()
+		for i := 0; i < len(vs); i++ {
+			for j := i + 1; j < len(vs); j++ {
+				if _, ok := m[vs[i]]; ok {
+					m[vs[i]] = m[vs[i]].Add(vs[j])
+				} else {
+					m[vs[i]] = []*vars.Var{vs[j]}
+				}
+				if _, ok := m[vs[j]]; ok {
+					m[vs[j]] = m[vs[j]].Add(vs[i])
+				} else {
+					m[vs[j]] = []*vars.Var{vs[i]}
+				}
+			}
+		}
+	}
+	return m
+}
+
 // AddNode add node to tree
 func (c *CTree) AddNode(nd *CTNode) {
 	c.nodes = append(c.nodes, nd)

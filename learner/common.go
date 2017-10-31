@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/britojr/lkbn/data"
+	"github.com/britojr/lkbn/vars"
 	"github.com/britojr/utl/conv"
 )
 
@@ -13,6 +14,7 @@ type common struct {
 	nv int           // number of variables
 	nl int           // number of latent variables
 	ds *data.Dataset // dataset
+	vs vars.VarList  // variables
 }
 
 func newCommon() *common {
@@ -22,6 +24,7 @@ func newCommon() *common {
 
 func (s *common) SetDataset(ds *data.Dataset) {
 	s.ds = ds
+	// s.vs = ds.Variables()
 }
 
 func (s *common) SetDefaultParameters() {

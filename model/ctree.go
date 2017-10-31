@@ -4,6 +4,7 @@ import (
 	"log"
 	"reflect"
 
+	"github.com/britojr/btbn/ktree"
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/vars"
 )
@@ -18,11 +19,43 @@ type CTree struct {
 	score  float64
 }
 
-// CTNode defines a clique tree node
-type CTNode struct {
-	children []*CTNode
-	parent   *CTNode
-	pot      *factor.Factor
+// NewCTree creates new empty CTree
+func NewCTree() *CTree {
+	return new(CTree)
+}
+
+// SampleUniform ..
+func SampleUniform(vs vars.VarList, k int) *CTree {
+	n := len(vs)
+	children, clqs := ktree.UniformSampleAdj(n, k)
+	nodes := []*CTNode(nil)
+	for i := range clqs {
+		cvars := make([]*vars.Var, 0, len(clqs[i]))
+		for _, v := range clqs[i] {
+			cvars = append(cvars, vs[v])
+		}
+		nd := new(CTNode)
+		nd.pot = factor.New(cvars...)
+		nodes = append(nodes, nd)
+	}
+	for i := range children {
+		for _, v := range children[i] {
+			nodes[i].children = append(nodes[i].children, nodes[v])
+			nodes[v].parent = nodes[i]
+		}
+	}
+	ct := new(CTree)
+	ct.nodes = nodes
+	ct.root = nodes[0]
+	return ct
+}
+
+// AddNode add node to tree
+func (c *CTree) AddNode(nd *CTNode) {
+	c.nodes = append(c.nodes, nd)
+	if c.root == nil {
+		c.root = nd
+	}
 }
 
 // Len return number of nodes in the tree
@@ -55,6 +88,13 @@ func (c *CTree) Better(other interface{}) bool {
 	}
 	log.Panicf("ctree: cannot compare to type '%v'", reflect.TypeOf(other))
 	return false
+}
+
+// CTNode defines a clique tree node
+type CTNode struct {
+	children []*CTNode
+	parent   *CTNode
+	pot      *factor.Factor
 }
 
 // Variables return node variables

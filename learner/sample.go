@@ -14,8 +14,15 @@ func NewSampleSearch() Learner {
 
 // Search searches for a network structure
 func (s *SampleSearch) Search() Solution {
-	// tk := ktree.UniformSample(s.nv, s.tw)
-	// bn := daglearner.Approximated(tk, s.scoreRanker)
-	// return bn
-	return new(model.BNet)
+	ct := s.sampleCTree()
+	s.computeMIScore(ct)
+	return ct
+}
+
+func (s *SampleSearch) sampleCTree() *model.CTree {
+	return model.SampleUniform(s.vs, s.tw)
+}
+
+func (s *SampleSearch) computeMIScore(ct *model.CTree) {
+
 }

@@ -26,7 +26,7 @@ const (
 // EMLearner implements Expectation-Maximization algorithm
 type EMLearner interface {
 	SetProperties(props map[string]string)
-	Run(model.Model, []map[int]int) (model.BNet, float64)
+	Run(model.Model, []map[int]int) (model.Model, float64)
 }
 
 // implementation of EMLearner
@@ -72,7 +72,7 @@ func (e *emAlg) start(infalg inference.InfAlg, evset []map[int]int) {
 }
 
 // Run runs EM until convergence or max iteration number is reached
-func (e *emAlg) Run(m model.Model, evset []map[int]int) (*model.Model, float64) {
+func (e *emAlg) Run(m model.Model, evset []map[int]int) (model.Model, float64) {
 	log.Printf("emlearner: start\n")
 	infalg := inference.NewCTreeCalibration(m)
 	e.nIters = 0

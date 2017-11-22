@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/britojr/btbn/ktree"
+	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/vars"
 )
@@ -125,6 +126,11 @@ func (c *CTree) Better(other interface{}) bool {
 
 // ToCTree return a ctree for this
 func (c *CTree) ToCTree() *CTree {
+	return c
+}
+
+// ComputeScore ..
+func (c *CTree) ComputeScore(ds *data.Dataset) float64 {
 	panic("not implemented")
 }
 

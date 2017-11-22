@@ -49,25 +49,25 @@ func structureLearning() {
 
 	log.Println("Searching structure")
 	start := time.Now()
-	bnet := learner.Search(alg, numSolutions, timeAvailable).(*model.BNet)
+	m := learner.Search(alg, numSolutions, timeAvailable).(*model.CTree)
 	elapsed := time.Since(start)
 
 	log.Printf(" ========== SOLUTION ============================== \n")
-	if bnet == nil {
+	if m == nil {
 		log.Printf("Couldn't find any solution in the given time!\n")
 		os.Exit(0)
 	}
-	totScore := bnet.ComputeScore(dataSet)
+	totScore := m.ComputeScore(dataSet)
 	log.Printf("Time: %v\n", elapsed)
 	log.Printf("Best Score: %.6f\n", totScore)
 	log.Printf(" -------------------------------------------------- \n")
 
 	if len(bnetFile) > 0 {
-		writeSolution(bnetFile, bnet, alg)
+		writeSolution(bnetFile, m, alg)
 	}
 }
 
-func writeSolution(fname string, bn *model.BNet, alg learner.Learner) {
+func writeSolution(fname string, bn *model.CTree, alg learner.Learner) {
 	log.Printf("Printing solution: '%v'\n", fname)
 	f := ioutl.CreateFile(fname)
 	defer f.Close()

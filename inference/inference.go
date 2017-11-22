@@ -1,6 +1,8 @@
 package inference
 
 import (
+	"log"
+
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/model"
 	"github.com/gonum/floats"
@@ -11,12 +13,12 @@ type InfAlg interface {
 	Run(map[int]int) float64
 	CTNodes() []*model.CTNode
 	CalibPotential(nd *model.CTNode) *factor.Factor
-	UpdatedModel() *model.BNet
+	UpdatedModel() model.Model
 }
 
 type cTCalib struct {
 	ct                *model.CTree
-	bn                *model.BNet
+	bn                model.Model
 	size              int
 	initPot, calibPot map[*model.CTNode]*factor.Factor
 
@@ -27,12 +29,11 @@ type cTCalib struct {
 }
 
 // NewCTreeCalibration creates a new clique tree calibration runner
-func NewCTreeCalibration(bn *model.BNet) InfAlg {
+func NewCTreeCalibration(bn model.Model) InfAlg {
 	c := new(cTCalib)
 	c.bn = bn
-	ct := bn.ToCTree()
-	c.ct = ct
-	c.size = ct.Len()
+	c.ct = bn.ToCTree()
+	c.size = c.ct.Len()
 
 	// initialize slices to be used on calibration
 	c.initPot = make(map[*model.CTNode]*factor.Factor)
@@ -45,14 +46,21 @@ func NewCTreeCalibration(bn *model.BNet) InfAlg {
 }
 
 // UpdatedModel updates model's parameters based on the internal ctree
-func (c *cTCalib) UpdatedModel() *model.BNet {
+func (c *cTCalib) UpdatedModel() model.Model {
 	// TODO: check if it needs to calibrate without evidence first
 	// c.Run(map[int]int{})
-	for v, nd := range c.ct.Families() {
-		bnd := c.bn.Node(v)
-		p := nd.Potential().Copy().Marginalize(bnd.Potential().Variables()...)
-		p.Normalize(bnd.Variable())
-		bnd.SetPotential(p)
+	switch m := c.bn.(type) {
+	case *model.CTree:
+		return c.ct
+	case *model.BNet:
+		for v, nd := range c.ct.Families() {
+			bnd := m.Node(v)
+			p := nd.Potential().Copy().Marginalize(bnd.Potential().Variables()...)
+			p.Normalize(bnd.Variable())
+			bnd.SetPotential(p)
+		}
+	default:
+		log.Panicf("unsuported model type")
 	}
 	return c.bn
 }

@@ -24,7 +24,7 @@ func NewCTree() *CTree {
 	return new(CTree)
 }
 
-// SampleUniform ..
+// SampleUniform uniformly samples a ktree
 func SampleUniform(vs vars.VarList, k int) *CTree {
 	n := len(vs)
 	children, clqs := ktree.UniformSampleAdj(n, k)
@@ -50,7 +50,7 @@ func SampleUniform(vs vars.VarList, k int) *CTree {
 	return ct
 }
 
-// VarsNeighbors ..
+// VarsNeighbors returns a mapping from variables to their neighbors
 func (c *CTree) VarsNeighbors() map[*vars.Var]vars.VarList {
 	m := make(map[*vars.Var]vars.VarList)
 	for _, nd := range c.nodes {
@@ -121,6 +121,11 @@ func (c *CTree) Better(other interface{}) bool {
 	}
 	log.Panicf("ctree: cannot compare to type '%v'", reflect.TypeOf(other))
 	return false
+}
+
+// ToCTree return a ctree for this
+func (c *CTree) ToCTree() *CTree {
+	panic("not implemented")
 }
 
 // CTNode defines a clique tree node

@@ -15,9 +15,9 @@ const (
 
 // file parameters fields
 const (
-	ParmTreewidth  = "treewidth"
-	ParmNumLatent  = "num_latent"
-	ParmMaxParents = "max_parents"
+	ParmTreewidth = "treewidth"
+	ParmNumLatent = "num_latent"
+	// ParmMaxParents = "max_parents"
 )
 
 // Learner defines a structure learner algorithm

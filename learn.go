@@ -37,8 +37,11 @@ func runLearner() {
 	log.Printf("Save solution in: '%v'\n", modelFile)
 	log.Printf(" -------------------------------------------------- \n")
 
-	log.Println("Reading parameters file")
-	props := ioutl.ReadYaml(parmFile)
+	var props map[string]string
+	if len(parmFile) > 0 {
+		log.Println("Reading parameters file")
+		props = ioutl.ReadYaml(parmFile)
+	}
 	dataSet := data.NewDataset(dataFile)
 
 	log.Println("Initializong learning algorithm")

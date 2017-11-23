@@ -62,6 +62,12 @@ func (e *emAlg) SetProperties(props map[string]string) {
 	}
 }
 
+func (e *emAlg) PrintProperties() {
+	log.Printf("=========== EM PROPERTIES ========================\n")
+	log.Printf("%v: %v\n", ParmMaxIters, e.maxIters)
+	log.Printf("%v: %v\n", ParmThreshold, e.threshold)
+}
+
 // start defines a starting point for model's parameters
 func (e *emAlg) start(infalg inference.InfAlg, evset []map[int]int) {
 	// TODO: add a non-trivial em (re)start policy
@@ -73,6 +79,7 @@ func (e *emAlg) start(infalg inference.InfAlg, evset []map[int]int) {
 
 // Run runs EM until convergence or max iteration number is reached
 func (e *emAlg) Run(m model.Model, evset []map[int]int) (model.Model, float64) {
+	e.PrintProperties()
 	log.Printf("emlearner: start\n")
 	infalg := inference.NewCTreeCalibration(m)
 	e.nIters = 0

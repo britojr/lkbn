@@ -58,7 +58,7 @@ func (s *common) ValidateParameters() {
 }
 
 func (s *common) PrintParameters() {
-	log.Printf(" ========== ALGORITHM PARAMETERS ================ \n")
+	log.Printf("============ ALGORITHM PARAMETERS ================\n")
 	log.Printf("total number of variables: %v\n", len(s.vs))
 	log.Printf("%v: %v\n", ParmTreewidth, s.tw)
 	log.Printf("%v: %v\n", ParmNumLatent, s.nl)

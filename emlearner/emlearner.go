@@ -26,7 +26,7 @@ const (
 // EMLearner implements Expectation-Maximization algorithm
 type EMLearner interface {
 	SetProperties(props map[string]string)
-	Run(model.Model, []map[int]int) (model.Model, float64)
+	Run(m model.Model, evset []map[int]int) (model.Model, float64)
 }
 
 // implementation of EMLearner

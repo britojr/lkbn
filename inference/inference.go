@@ -18,7 +18,7 @@ type InfAlg interface {
 
 type cTCalib struct {
 	ct                *model.CTree
-	bn                model.Model
+	m                 model.Model
 	size              int
 	initPot, calibPot map[*model.CTNode]*factor.Factor
 
@@ -29,10 +29,10 @@ type cTCalib struct {
 }
 
 // NewCTreeCalibration creates a new clique tree calibration runner
-func NewCTreeCalibration(bn model.Model) InfAlg {
+func NewCTreeCalibration(m model.Model) InfAlg {
 	c := new(cTCalib)
-	c.bn = bn
-	c.ct = bn.ToCTree()
+	c.m = m
+	c.ct = m.ToCTree()
 	c.size = c.ct.Len()
 
 	// initialize slices to be used on calibration
@@ -49,7 +49,7 @@ func NewCTreeCalibration(bn model.Model) InfAlg {
 func (c *cTCalib) UpdatedModel() model.Model {
 	// TODO: check if it needs to calibrate without evidence first
 	// c.Run(map[int]int{})
-	switch m := c.bn.(type) {
+	switch m := c.m.(type) {
 	case *model.CTree:
 		return c.ct
 	case *model.BNet:
@@ -62,7 +62,7 @@ func (c *cTCalib) UpdatedModel() model.Model {
 	default:
 		log.Panicf("unsuported model type")
 	}
-	return c.bn
+	return c.m
 }
 
 // Nodes returns reference for ctree nodes

@@ -1,11 +1,17 @@
 package factor
 
 import (
+	"errors"
 	"math/rand"
 	"time"
 
 	"github.com/britojr/lkbn/vars"
 	"gonum.org/v1/gonum/floats"
+)
+
+var (
+	// ErrZeroSum error used to inform that noramlization tried to divede by zero
+	ErrZeroSum = errors.New("Normalization group add up to zero")
 )
 
 // Factor defines a function that maps a joint of categorical variables to float values
@@ -78,7 +84,8 @@ func (f *Factor) RandomDistribute(xs ...*vars.Var) *Factor {
 			f.values[i] = r.Float64()
 		}
 	}
-	return f.Normalize(xs...)
+	f.Normalize(xs...)
+	return f
 }
 
 // Plus adds g to f
@@ -123,7 +130,8 @@ func (f *Factor) operationTr(f1, f2 *Factor, op func(a, b float64) float64) *Fac
 
 // Normalize normalizes f so the values add up to one
 // the normalization can be conditional in one variable
-func (f *Factor) Normalize(xs ...*vars.Var) *Factor {
+func (f *Factor) Normalize(xs ...*vars.Var) (*Factor, error) {
+	var err error
 	if len(xs) == 0 {
 		return f.normalizeAll()
 	}
@@ -142,23 +150,25 @@ func (f *Factor) Normalize(xs ...*vars.Var) *Factor {
 		if sums[ixf.I()] != 0 {
 			f.values[i] /= sums[ixf.I()]
 		} else {
-			panic("factor: conditional prob with zero sum")
+			err = ErrZeroSum
+			f.values[i] = 0
 		}
 		ixf.Next()
 	}
-	return f
+	return f, err
 }
 
-func (f *Factor) normalizeAll() *Factor {
+func (f *Factor) normalizeAll() (*Factor, error) {
+	var err error
 	sum := floats.Sum(f.values)
 	if sum != 0 {
 		for i := range f.values {
 			f.values[i] /= sum
 		}
 	} else {
-		panic("factor: all values add up to zero")
+		err = ErrZeroSum
 	}
-	return f
+	return f, err
 }
 
 // SumOut sums out the given variables

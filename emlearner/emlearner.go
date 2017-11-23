@@ -88,10 +88,13 @@ func (e *emAlg) Run(m model.Model, evset []map[int]int) (model.Model, float64) {
 	for {
 		llnew = e.runStep(infalg, evset)
 		e.nIters++
-		if llant != 0 && (e.nIters >= e.maxIters || (math.Abs((llnew-llant)/llant) < e.threshold)) {
-			break
+		if llant != 0 {
+			if e.nIters >= e.maxIters || (math.Abs((llnew-llant)/llant) < e.threshold) {
+				break
+			}
+			log.Printf("\temlearner: diff=%v\n", math.Abs((llnew-llant)/llant))
 		}
-		log.Printf("\temlearner: diff=%v\n", math.Abs((llnew-llant)/llant))
+		log.Printf("\temlearner: new=%v\n", llnew)
 		llant = llnew
 	}
 	log.Printf("emlearner: iterations=%v\n", e.nIters)
@@ -108,6 +111,10 @@ func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
 	for _, evid := range evset {
 		// evid is a map of var to state
 		evLkhood := infalg.Run(evid)
+		log.Printf("\t>>emlearner: evidlkhood %v\n", evLkhood)
+		if evLkhood == 0 {
+			panic("emlearner: invalid log(0)")
+		}
 		ll += math.Log(evLkhood)
 
 		// acumulate sufficient statistics in the copy of parameters
@@ -123,7 +130,11 @@ func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
 	// maximization step
 	// updates parameters
 	for nd, p := range count {
-		p.Normalize()
+		if pa := nd.Parent(); pa != nil {
+			p.Normalize(nd.Potential().Variables().Diff(pa.Potential().Variables())...)
+		} else {
+			p.Normalize()
+		}
 		nd.SetPotential(p)
 	}
 

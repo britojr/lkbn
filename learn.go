@@ -53,7 +53,7 @@ func runLearner() {
 
 	log.Println("Searching structure")
 	start := time.Now()
-	m := learner.Search(alg, numSolutions, timeAvailable).(*model.CTree)
+	m := learner.Search(alg, numSolutions, timeAvailable)
 	elapsed := time.Since(start)
 
 	log.Printf(" ========== SOLUTION ============================== \n")
@@ -61,17 +61,16 @@ func runLearner() {
 		log.Printf("Couldn't find any solution in the given time!\n")
 		os.Exit(0)
 	}
-	totScore := m.Score()
 	log.Printf("Time: %v\n", elapsed)
-	log.Printf("Best Score: %.6f\n", totScore)
+	log.Printf("Best Score: %.6f\n", m.Score())
 	log.Printf(" -------------------------------------------------- \n")
 
 	if len(modelFile) > 0 {
-		writeSolution(modelFile, m, alg)
+		writeSolution(modelFile, m.(model.Model), alg)
 	}
 }
 
-func writeSolution(fname string, m *model.CTree, alg learner.Learner) {
+func writeSolution(fname string, m model.Model, alg learner.Learner) {
 	log.Printf("Printing solution: '%v'\n", fname)
 	f := ioutl.CreateFile(fname)
 	defer f.Close()

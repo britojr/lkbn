@@ -1,9 +1,6 @@
 package model
 
 import (
-	"log"
-	"reflect"
-
 	"github.com/britojr/btbn/ktree"
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/vars"
@@ -112,16 +109,16 @@ func (c *CTree) Families() map[*vars.Var]*CTNode {
 }
 
 // Better return true if this model is better
-func (c *CTree) Better(other interface{}) bool {
-	if v, ok := other.(CTree); ok {
-		return c.score > v.score
-	}
-	if v, ok := other.(BNet); ok {
-		return c.score > v.score
-	}
-	log.Panicf("ctree: cannot compare to type '%v'", reflect.TypeOf(other))
-	return false
-}
+// func (c *CTree) Better(other interface{}) bool {
+// 	if v, ok := other.(CTree); ok {
+// 		return c.score > v.score
+// 	}
+// 	if v, ok := other.(BNet); ok {
+// 		return c.score > v.score
+// 	}
+// 	log.Panicf("ctree: cannot compare to type '%v'", reflect.TypeOf(other))
+// 	return false
+// }
 
 // ToCTree return a ctree for this
 func (c *CTree) ToCTree() *CTree {

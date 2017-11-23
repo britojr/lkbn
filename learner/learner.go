@@ -33,7 +33,7 @@ type Learner interface {
 
 // Solution defines a solution interface
 type Solution interface {
-	Better(interface{}) bool
+	Score() float64
 }
 
 // Create creates a structure learner algorithm
@@ -72,7 +72,7 @@ func Search(alg Learner, numSolutions, timeAvailable int) Solution {
 				remaining = 0
 			}
 
-			if best == nil || current.Better(best) {
+			if best == nil || current.Score() > best.Score() {
 				best = current
 			}
 			if remaining <= 0 {
@@ -87,7 +87,7 @@ func Search(alg Learner, numSolutions, timeAvailable int) Solution {
 	} else {
 		for i := 0; i < numSolutions; i++ {
 			current := alg.Search()
-			if best == nil || current.Better(best) {
+			if best == nil || current.Score() > best.Score() {
 				best = current
 			}
 		}

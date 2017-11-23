@@ -25,7 +25,7 @@ type Learner interface {
 	Search() Solution
 	SetDefaultParameters()
 	SetDataset(*data.Dataset)
-	SetFileParameters(parms map[string]string)
+	SetFileParameters(map[string]string)
 	ValidateParameters()
 	PrintParameters()
 	Treewidth() int

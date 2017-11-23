@@ -38,13 +38,13 @@ func runLearner() {
 	log.Printf(" -------------------------------------------------- \n")
 
 	log.Println("Reading parameters file")
-	parms := ioutl.ReadYaml(parmFile)
+	props := ioutl.ReadYaml(parmFile)
 	dataSet := data.NewDataset(dataFile)
 
 	log.Println("Initializong learning algorithm")
 	alg := learner.Create(learnerAlg)
 	alg.SetDataset(dataSet)
-	alg.SetFileParameters(parms)
+	alg.SetFileParameters(props)
 	alg.ValidateParameters()
 	alg.PrintParameters()
 

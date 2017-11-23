@@ -1,9 +1,14 @@
 package model
 
 import (
+	"io/ioutil"
+
 	"github.com/britojr/btbn/ktree"
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/vars"
+	"github.com/britojr/utl/errchk"
+	"github.com/britojr/utl/ioutl"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // CTree defines a structure in clique tree format
@@ -47,14 +52,100 @@ func SampleUniform(vs vars.VarList, k int) *CTree {
 	return ct
 }
 
+type codedTree struct {
+	Variables []struct {
+		Name string
+		Card int
+	}
+	Nodes []struct {
+		ClqVars []string
+		Values  []float64
+		Parent  []string
+	}
+}
+
 // Read creates new CTree from file
-func Read(fname string) *CTree {
-	return new(CTree)
+func Read(fname string) (c *CTree) {
+	t := codedTree{}
+	data, err := ioutil.ReadFile(fname)
+	errchk.Check(err, "")
+	errchk.Check(yaml.Unmarshal([]byte(data), &t), "")
+
+	c = new(CTree)
+	vm := make(map[string]*vars.Var)
+	for i, tv := range t.Variables {
+		v := vars.New(i, tv.Card)
+		v.SetName(tv.Name)
+		vm[tv.Name] = v
+	}
+	for _, tnd := range t.Nodes {
+		nd := new(CTNode)
+		var vs vars.VarList
+		for _, tv := range tnd.ClqVars {
+			vs = append(vs, vm[tv])
+		}
+		nd.pot = factor.New(vs...)
+		nd.pot.SetValues(tnd.Values)
+		c.nodes = append(c.nodes, nd)
+		if len(tnd.Parent) == 0 {
+			c.root = nd
+		}
+	}
+	for i, tnd := range t.Nodes {
+		if len(tnd.Parent) == 0 {
+			continue
+		}
+		var vs vars.VarList
+		for _, tv := range tnd.Parent {
+			vs = append(vs, vm[tv])
+		}
+		pa := c.FindNode(vs)
+		c.nodes[i].parent = pa
+		pa.children = append(pa.children, c.nodes[i])
+	}
+	return
 }
 
 // Write writes CTree on file
 func (c *CTree) Write(fname string) {
+	t := codedTree{}
+	vm := make(map[int]*vars.Var)
+	t.Nodes = make([]struct {
+		ClqVars []string
+		Values  []float64
+		Parent  []string
+	}, len(c.nodes))
+	for i, nd := range c.nodes {
+		clqvars := []string(nil)
+		for _, v := range nd.Variables() {
+			clqvars = append(clqvars, v.Name())
+			vm[v.ID()] = v
+		}
+		t.Nodes[i].ClqVars = clqvars
+		t.Nodes[i].Values = nd.pot.Values()
+		if nd.parent == nil {
+			continue
+		}
+		pavars := []string(nil)
+		for _, v := range nd.parent.Variables() {
+			pavars = append(pavars, v.Name())
+		}
+		t.Nodes[i].Parent = pavars
+	}
 
+	t.Variables = make([]struct {
+		Name string
+		Card int
+	}, len(vm))
+	for i := range t.Variables {
+		t.Variables[i].Name = vm[i].Name()
+		t.Variables[i].Card = vm[i].NState()
+	}
+
+	d, err := yaml.Marshal(&t)
+	errchk.Check(err, "")
+	f := ioutl.CreateFile(fname)
+	f.Write(d)
 }
 
 // VarsNeighbors returns a mapping from variables to their neighbors

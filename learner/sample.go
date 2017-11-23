@@ -2,6 +2,7 @@ package learner
 
 import (
 	"github.com/britojr/btbn/scr"
+	"github.com/britojr/lkbn/emlearner"
 	"github.com/britojr/lkbn/model"
 )
 
@@ -19,6 +20,9 @@ func NewSampleSearch() Learner {
 // Search searches for a network structure
 func (s *SampleSearch) Search() Solution {
 	ct := s.sampleCTree()
+	eml := emlearner.New()
+	eml.SetProperties(s.props)
+	eml.Run(ct, s.ds.IntMaps())
 	return ct
 }
 

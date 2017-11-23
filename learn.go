@@ -58,7 +58,7 @@ func runLearner() {
 		log.Printf("Couldn't find any solution in the given time!\n")
 		os.Exit(0)
 	}
-	totScore := m.ComputeScore(dataSet)
+	totScore := m.Score()
 	log.Printf("Time: %v\n", elapsed)
 	log.Printf("Best Score: %.6f\n", totScore)
 	log.Printf(" -------------------------------------------------- \n")

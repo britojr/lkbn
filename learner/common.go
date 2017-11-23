@@ -10,12 +10,13 @@ import (
 
 // common defines default behaviours
 type common struct {
-	tw      int           // treewidth
-	nv      int           // number of observed variables
-	nl      int           // number of latent variables
-	lstates int           // default number of states of latent variables
-	ds      *data.Dataset // dataset
-	vs      vars.VarList  // variables
+	tw      int               // treewidth
+	nv      int               // number of observed variables
+	nl      int               // number of latent variables
+	lstates int               // default number of states of latent variables
+	ds      *data.Dataset     // dataset
+	vs      vars.VarList      // variables
+	props   map[string]string // property map
 }
 
 func newCommon() *common {
@@ -35,14 +36,15 @@ func (s *common) SetDefaultParameters() {
 	s.lstates = 2
 }
 
-func (s *common) SetFileParameters(parms map[string]string) {
-	if tw, ok := parms[ParmTreewidth]; ok {
+func (s *common) SetFileParameters(props map[string]string) {
+	if tw, ok := props[ParmTreewidth]; ok {
 		s.tw = conv.Atoi(tw)
 	}
-	if nl, ok := parms[ParmNumLatent]; ok {
+	if nl, ok := props[ParmNumLatent]; ok {
 		s.nl = conv.Atoi(nl)
 		s.addLatVars()
 	}
+	s.props = props
 }
 
 func (s *common) ValidateParameters() {

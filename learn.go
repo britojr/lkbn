@@ -13,38 +13,39 @@ import (
 	"github.com/britojr/utl/ioutl"
 )
 
-func runStructComm() {
+func runCTLearnComm() {
 	// Required Flags
 	if dataFile == "" {
 		fmt.Printf("\n error: missing dataset file\n\n")
-		structComm.PrintDefaults()
+		ctLearnComm.PrintDefaults()
 		os.Exit(1)
 	}
 	if !verbose {
 		log.SetOutput(ioutil.Discard)
 	}
 
-	structureLearning()
+	runLearner()
 }
 
-func structureLearning() {
-	log.Printf(" ========== BEGIN STRUCTURE OPTIMIZATION ========== \n")
+func runLearner() {
+	log.Printf(" ========== BEGIN MODEL LEARNING ================= \n")
 	log.Printf("Dataset file: '%v'\n", dataFile)
 	log.Printf("Learning algorithm: '%v'\n", learnerAlg)
 	log.Printf("Max. iterations: %v\n", numSolutions)
 	log.Printf("Max. time available (sec): %v\n", timeAvailable)
 	log.Printf("Parameters file: '%v'\n", parmFile)
-	log.Printf("Save solution in: '%v'\n", bnetFile)
+	log.Printf("Save solution in: '%v'\n", modelFile)
 	log.Printf(" -------------------------------------------------- \n")
 
 	log.Println("Reading parameters file")
 	parms := ioutl.ReadYaml(parmFile)
 	dataSet := data.NewDataset(dataFile)
 
-	log.Println("Creating structure learning algorithm")
+	log.Println("Initializong learning algorithm")
 	alg := learner.Create(learnerAlg)
 	alg.SetDataset(dataSet)
 	alg.SetFileParameters(parms)
+	alg.ValidateParameters()
 	alg.PrintParameters()
 
 	log.Println("Searching structure")
@@ -62,12 +63,12 @@ func structureLearning() {
 	log.Printf("Best Score: %.6f\n", totScore)
 	log.Printf(" -------------------------------------------------- \n")
 
-	if len(bnetFile) > 0 {
-		writeSolution(bnetFile, m, alg)
+	if len(modelFile) > 0 {
+		writeSolution(modelFile, m, alg)
 	}
 }
 
-func writeSolution(fname string, bn *model.CTree, alg learner.Learner) {
+func writeSolution(fname string, m *model.CTree, alg learner.Learner) {
 	log.Printf("Printing solution: '%v'\n", fname)
 	f := ioutl.CreateFile(fname)
 	defer f.Close()

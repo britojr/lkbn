@@ -8,8 +8,8 @@ import (
 
 // Define subcommand names
 const (
-	structConst = "struct"
-	structDescr = "run latent k-tree Bayesian networks learning algorithm"
+	ctLearnConst = "ctlearn"
+	ctLearnDescr = "run latent k-tree model learning algorithm"
 )
 
 // Define Flag variables
@@ -19,14 +19,14 @@ var (
 
 	// struct command
 	dataFile      string // dataset csv file
-	bnetFile      string // network output file
+	modelFile     string // network output file
 	parmFile      string // parameters file for search algorithms
-	learnerAlg    string // structure learner algorithm
+	learnerAlg    string // learner strategy
 	timeAvailable int    // time available to search solution
 	numSolutions  int    // number of iterations
 
 	// Define subcommands
-	structComm *flag.FlagSet
+	ctLearnComm *flag.FlagSet
 )
 
 func main() {
@@ -38,9 +38,9 @@ func main() {
 		os.Exit(1)
 	}
 	switch os.Args[1] {
-	case structConst:
-		structComm.Parse(os.Args[2:])
-		runStructComm()
+	case ctLearnConst:
+		ctLearnComm.Parse(os.Args[2:])
+		runCTLearnComm()
 	default:
 		printDefaults()
 		os.Exit(1)
@@ -49,24 +49,24 @@ func main() {
 
 func initSubcommands() {
 	// Subcommands
-	structComm = flag.NewFlagSet(structConst, flag.ExitOnError)
+	ctLearnComm = flag.NewFlagSet(ctLearnConst, flag.ExitOnError)
 
 	// struct subcommand flags
-	structComm.BoolVar(&verbose, "v", true, "prints detailed steps")
-	structComm.StringVar(&dataFile, "d", "", "dataset file in csv format")
-	structComm.StringVar(&parmFile, "p", "", "parameters file")
-	structComm.StringVar(&bnetFile, "b", "", "network output file")
-	structComm.StringVar(&learnerAlg, "a", "sample", "structure learner algorith")
-	structComm.IntVar(&timeAvailable, "t", 60, "available time to search solution (0->unbounded)")
-	structComm.IntVar(&numSolutions, "i", 1, "max number of iterations (0->unbounded)")
+	ctLearnComm.BoolVar(&verbose, "v", true, "prints detailed steps")
+	ctLearnComm.StringVar(&dataFile, "d", "", "dataset file in csv format")
+	ctLearnComm.StringVar(&parmFile, "p", "", "parameters file")
+	ctLearnComm.StringVar(&modelFile, "b", "", "network output file")
+	ctLearnComm.StringVar(&learnerAlg, "a", "sample", "learner algorithm")
+	ctLearnComm.IntVar(&timeAvailable, "t", 60, "available time to search solution (0->unbounded)")
+	ctLearnComm.IntVar(&numSolutions, "i", 1, "max number of iterations (0->unbounded)")
 }
 
 func printDefaults() {
-	fmt.Printf("lkbn is a tool for learning latent k-tree Bayesian networks\n")
+	fmt.Printf("lkbn is a tool for learning latent k-tree models\n")
 	fmt.Printf("Usage:\n\n")
 	fmt.Printf("\tlkbn <command> [options]\n\n")
 	fmt.Printf("Commands:\n\n")
-	fmt.Printf("\t%v\t\t%v\n", structConst, structDescr)
+	fmt.Printf("\t%v\t\t%v\n", ctLearnConst, ctLearnDescr)
 	fmt.Println()
 	fmt.Printf("For usage details of each command, run:\n\n")
 	fmt.Printf("\tlkbn <command> --help\n")

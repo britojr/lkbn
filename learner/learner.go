@@ -10,7 +10,7 @@ import (
 
 // search algorithms names
 const (
-	AlgSampleSearch = "ctree_sample"
+	AlgSampleSearch = "ctsample"
 )
 
 // file parameters fields

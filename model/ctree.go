@@ -47,6 +47,16 @@ func SampleUniform(vs vars.VarList, k int) *CTree {
 	return ct
 }
 
+// Read creates new CTree from file
+func Read(fname string) *CTree {
+	return new(CTree)
+}
+
+// Write writes CTree on file
+func (c *CTree) Write(fname string) {
+
+}
+
 // VarsNeighbors returns a mapping from variables to their neighbors
 func (c *CTree) VarsNeighbors() map[*vars.Var]vars.VarList {
 	m := make(map[*vars.Var]vars.VarList)
@@ -103,22 +113,21 @@ func (c *CTree) Nodes() []*CTNode {
 	return c.nodes
 }
 
-// Families return map of var to family
-func (c *CTree) Families() map[*vars.Var]*CTNode {
-	return c.family
+// FindNode return the node that contains exactly the given variables
+func (c *CTree) FindNode(vs vars.VarList) *CTNode {
+	for _, nd := range c.nodes {
+		if nd.Variables().Equal(vs) {
+			return nd
+		}
+	}
+	return nil
 }
 
-// Better return true if this model is better
-// func (c *CTree) Better(other interface{}) bool {
-// 	if v, ok := other.(CTree); ok {
-// 		return c.score > v.score
-// 	}
-// 	if v, ok := other.(BNet); ok {
-// 		return c.score > v.score
-// 	}
-// 	log.Panicf("ctree: cannot compare to type '%v'", reflect.TypeOf(other))
-// 	return false
-// }
+// Families return map of var to family
+func (c *CTree) Families() map[*vars.Var]*CTNode {
+	// return c.family
+	panic("not implemented")
+}
 
 // ToCTree return a ctree for this
 func (c *CTree) ToCTree() *CTree {

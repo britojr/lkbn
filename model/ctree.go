@@ -108,6 +108,13 @@ func Read(fname string) (c *CTree) {
 
 // Write writes CTree on file
 func (c *CTree) Write(fname string) {
+	f := ioutl.CreateFile(fname)
+	d := []byte(c.String())
+	f.Write(d)
+	f.Close()
+}
+
+func (c *CTree) String() string {
 	t := codedTree{}
 	vm := make(map[int]*vars.Var)
 	t.Nodes = make([]struct {
@@ -144,8 +151,7 @@ func (c *CTree) Write(fname string) {
 
 	d, err := yaml.Marshal(&t)
 	errchk.Check(err, "")
-	f := ioutl.CreateFile(fname)
-	f.Write(d)
+	return string(d)
 }
 
 // VarsNeighbors returns a mapping from variables to their neighbors

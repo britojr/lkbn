@@ -15,6 +15,8 @@ func TestReadWrite(t *testing.T) {
 		k  int
 	}{{
 		vars.NewList([]int{0, 1, 2, 3, 4}, []int{2, 2, 2, 2, 2}), 2,
+	}, {
+		vars.NewList([]int{0, 1, 2, 3, 4, 5}, []int{2, 2, 2, 2, 2, 2}), 3,
 	}}
 	for _, tt := range cases {
 		cta := SampleUniform(tt.vs, tt.k)

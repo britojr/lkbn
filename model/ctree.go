@@ -21,37 +21,6 @@ type CTree struct {
 	score  float64
 }
 
-// NewCTree creates new empty CTree
-func NewCTree() *CTree {
-	return new(CTree)
-}
-
-// SampleUniform uniformly samples a ktree
-func SampleUniform(vs vars.VarList, k int) *CTree {
-	n := len(vs)
-	children, clqs := ktree.UniformSampleAdj(n, k)
-	nodes := []*CTNode(nil)
-	for i := range clqs {
-		cvars := make([]*vars.Var, 0, len(clqs[i]))
-		for _, v := range clqs[i] {
-			cvars = append(cvars, vs[v])
-		}
-		nd := new(CTNode)
-		nd.pot = factor.New(cvars...)
-		nodes = append(nodes, nd)
-	}
-	for i := range children {
-		for _, v := range children[i] {
-			nodes[i].children = append(nodes[i].children, nodes[v])
-			nodes[v].parent = nodes[i]
-		}
-	}
-	ct := new(CTree)
-	ct.nodes = nodes
-	ct.root = nodes[0]
-	return ct
-}
-
 type codedTree struct {
 	Variables []struct {
 		Name string
@@ -64,13 +33,30 @@ type codedTree struct {
 	}
 }
 
+// NewCTree creates new empty CTree
+func NewCTree() *CTree {
+	return new(CTree)
+}
+
 // Read creates new CTree from file
 func Read(fname string) (c *CTree) {
-	t := codedTree{}
 	data, err := ioutil.ReadFile(fname)
 	errchk.Check(err, "")
-	errchk.Check(yaml.Unmarshal([]byte(data), &t), "")
+	return FromString(string(data))
+}
 
+// Write writes CTree on file
+func (c *CTree) Write(fname string) {
+	f := ioutl.CreateFile(fname)
+	d := []byte(c.String())
+	f.Write(d)
+	f.Close()
+}
+
+// FromString creates new CTree from string
+func FromString(strct string) (c *CTree) {
+	t := codedTree{}
+	errchk.Check(yaml.Unmarshal([]byte(strct), &t), "")
 	c = new(CTree)
 	vm := make(map[string]*vars.Var)
 	for i, tv := range t.Variables {
@@ -104,14 +90,6 @@ func Read(fname string) (c *CTree) {
 		pa.children = append(pa.children, c.nodes[i])
 	}
 	return
-}
-
-// Write writes CTree on file
-func (c *CTree) Write(fname string) {
-	f := ioutl.CreateFile(fname)
-	d := []byte(c.String())
-	f.Write(d)
-	f.Close()
 }
 
 func (c *CTree) String() string {
@@ -152,6 +130,37 @@ func (c *CTree) String() string {
 	d, err := yaml.Marshal(&t)
 	errchk.Check(err, "")
 	return string(d)
+}
+
+// SampleUniform uniformly samples a ktree
+func SampleUniform(vs vars.VarList, k int) *CTree {
+	n := len(vs)
+	children, clqs := ktree.UniformSampleAdj(n, k)
+	nodes := []*CTNode(nil)
+	for i := range clqs {
+		cvars := make([]*vars.Var, 0, len(clqs[i]))
+		for _, v := range clqs[i] {
+			cvars = append(cvars, vs[v])
+		}
+		nd := new(CTNode)
+		nd.pot = factor.New(cvars...)
+		nodes = append(nodes, nd)
+	}
+	for i := range children {
+		for _, v := range children[i] {
+			nodes[i].children = append(nodes[i].children, nodes[v])
+			nodes[v].parent = nodes[i]
+		}
+	}
+	ct := new(CTree)
+	ct.nodes = nodes
+	ct.root = nodes[0]
+	return ct
+}
+
+// Equal compares cliques and values of two ctrees
+func (c *CTree) Equal(other *CTree) bool {
+	return c.String() == other.String()
 }
 
 // VarsNeighbors returns a mapping from variables to their neighbors

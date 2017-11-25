@@ -111,7 +111,7 @@ func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
 	for _, evid := range evset {
 		// evid is a map of var to state
 		evLkhood := infalg.Run(evid)
-		log.Printf("\t>>emlearner: evidlkhood %v\n", evLkhood)
+		// log.Printf("\t>>emlearner: evidlkhood= %v\n", evLkhood)
 		if evLkhood == 0 {
 			panic("emlearner: invalid log(0)")
 		}
@@ -140,5 +140,6 @@ func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
 
 	// updates loglikelihood of optimized model
 	// m.SetLoglikelihood(ds, ll)
+	log.Printf("\t>>emlearner: tot ll= %v\n", ll)
 	return ll
 }

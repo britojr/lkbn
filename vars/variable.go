@@ -19,6 +19,7 @@ func New(id, nstate int) (v *Var) {
 	v = new(Var)
 	v.id = id
 	v.nstate = nstate
+	v.name = fmt.Sprintf("x%v", id)
 	return
 }
 

@@ -254,12 +254,30 @@ func TestNormalize(t *testing.T) {
 		),
 		vars.NewList([]int{0, 1}, []int{2, 2}),
 		[]float64{.1, .2, .3, .4},
+	}, {
+		New(vars.NewList([]int{1, 2, 4}, []int{2, 2, 2})...).SetValues(
+			[]float64{0.136787, 0.155550, 0.111151, 0.157961, 0.105447, 0.122897, 0.092158, 0.118050},
+		),
+		vars.NewList([]int{4}, []int{2}),
+		[]float64{
+			0.136787 / 0.242234, 0.155550 / 0.278447, 0.111151 / 0.203309, 0.157961 / 0.276011,
+			0.105447 / 0.242234, 0.122897 / 0.278447, 0.092158 / 0.203309, 0.118050 / 0.276011,
+		},
+	}, {
+		New(vars.NewList([]int{0, 1, 4}, []int{2, 2, 2})...).SetValues(
+			[]float64{0.125050, 0.125433, 0.117747, 0.135743, 0.051529, 0.143530, 0.128461, 0.172506},
+		),
+		vars.NewList([]int{4}, []int{2}),
+		[]float64{
+			0.125050 / 0.176579, 0.125433 / 0.268963, 0.117747 / 0.246208, 0.135743 / 0.308249,
+			0.051529 / 0.176579, 0.143530 / 0.268963, 0.128461 / 0.246208, 0.172506 / 0.308249,
+		},
 	}}
 	for _, tt := range cases {
 		got := tt.f
 		got.Normalize(tt.vs...)
 		if !floats.EqualApprox(tt.result, got.values, tol) {
-			t.Errorf("wrong result %v != %v", tt.result, got.values)
+			t.Errorf("wrong result:\n%v\n!=\n%v\n", tt.result, got.values)
 		}
 	}
 }

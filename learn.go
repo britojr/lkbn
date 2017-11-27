@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/britojr/lkbn/data"
+	"github.com/britojr/lkbn/emlearner"
 	"github.com/britojr/lkbn/learner"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/utl/ioutl"
@@ -74,4 +75,58 @@ func writeSolution(fname string, m model.Model, alg learner.Learner) {
 	log.Printf("Printing solution: '%v'\n", fname)
 	f := ioutl.CreateFile(fname)
 	defer f.Close()
+}
+
+func runCTParamLearnComm() {
+	// Required Flags
+	if dataFile == "" {
+		fmt.Printf("\n error: missing dataset file\n\n")
+		ctParamLearnComm.PrintDefaults()
+		os.Exit(1)
+	}
+	if modelFIn == "" {
+		fmt.Printf("\n error: missing model structure file\n\n")
+		ctParamLearnComm.PrintDefaults()
+		os.Exit(1)
+	}
+	if !verbose {
+		log.SetOutput(ioutil.Discard)
+	}
+
+	runParamLearner()
+}
+
+func runParamLearner() {
+	log.Printf("=========== BEGIN MODEL LEARNING =================\n")
+	log.Printf("Dataset file: '%v'\n", dataFile)
+	log.Printf("Parameters file: '%v'\n", parmFile)
+	log.Printf("Read structure from: '%v'\n", modelFIn)
+	log.Printf("Save solution in: '%v'\n", modelFOut)
+	log.Printf("--------------------------------------------------\n")
+
+	var props map[string]string
+	if len(parmFile) > 0 {
+		log.Println("Reading parameters file")
+		props = ioutl.ReadYaml(parmFile)
+	}
+	dataSet := data.NewDataset(dataFile)
+
+	log.Println("Reading model structure")
+	ct := model.Read(modelFIn)
+	log.Println("Initializong parameter learner")
+	eml := emlearner.New()
+	eml.SetProperties(props)
+	log.Println("Learning parameters")
+	start := time.Now()
+	m, ll := eml.Run(ct, dataSet.IntMaps())
+	elapsed := time.Since(start)
+
+	log.Printf("========== SOLUTION ==============================\n")
+	log.Printf("Time: %v\n", elapsed)
+	log.Printf("LogLikelihood: %.6f\n", ll)
+	log.Printf("--------------------------------------------------\n")
+
+	if len(modelFOut) > 0 {
+		writeSolution(modelFOut, m, nil)
+	}
 }

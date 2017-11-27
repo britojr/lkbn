@@ -4,23 +4,26 @@ import (
 	"log"
 
 	"github.com/britojr/lkbn/data"
+	"github.com/britojr/lkbn/emlearner"
 	"github.com/britojr/lkbn/vars"
 	"github.com/britojr/utl/conv"
 )
 
 // common defines default behaviours
 type common struct {
-	tw      int               // treewidth
-	nv      int               // number of observed variables
-	nl      int               // number of latent variables
-	lstates int               // default number of states of latent variables
-	ds      *data.Dataset     // dataset
-	vs      vars.VarList      // variables
-	props   map[string]string // property map
+	tw           int                 // treewidth
+	nv           int                 // number of observed variables
+	nl           int                 // number of latent variables
+	lstates      int                 // default number of states of latent variables
+	ds           *data.Dataset       // dataset
+	vs           vars.VarList        // variables
+	props        map[string]string   // property map
+	paramLearner emlearner.EMLearner // parameter learner
 }
 
 func newCommon() *common {
 	s := new(common)
+	s.paramLearner = emlearner.New()
 	return s
 }
 
@@ -44,6 +47,7 @@ func (s *common) SetFileParameters(props map[string]string) {
 		s.nl = conv.Atoi(nl)
 		s.addLatVars()
 	}
+	s.paramLearner.SetProperties(props)
 	s.props = props
 }
 

@@ -88,24 +88,24 @@ func (vl VarList) Union(other VarList) (w VarList) {
 }
 
 // Add add a variable to vl
-func (vl VarList) Add(x *Var) VarList {
+func (vl *VarList) Add(x *Var) VarList {
 	i := 0
-	for i < len(vl) {
-		if vl[i].ID() >= x.ID() {
+	for i < len(*vl) {
+		if (*vl)[i].ID() >= x.ID() {
 			break
 		}
 		i++
 	}
-	if i < len(vl) {
-		if vl[i].ID() == x.ID() {
-			return vl
+	if i < len(*vl) {
+		if (*vl)[i].ID() == x.ID() {
+			return *vl
 		}
-		xs := append([]*Var{x}, vl[i:]...)
-		vl = append(vl[:i], xs...)
-		return vl
+		xs := append([]*Var{x}, (*vl)[i:]...)
+		(*vl) = append((*vl)[:i], xs...)
+		return *vl
 	}
-	vl = append(vl, x)
-	return vl
+	*vl = append(*vl, x)
+	return *vl
 }
 
 // IntersecID returns new list with elements present in vl and in ids

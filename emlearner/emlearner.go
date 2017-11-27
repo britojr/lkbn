@@ -119,10 +119,11 @@ func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
 
 		// acumulate sufficient statistics in the copy of parameters
 		for _, nd := range infalg.CTNodes() {
+			q, _ := infalg.CalibPotential(nd).Normalize()
 			if p, ok := count[nd]; ok {
-				p.Plus(infalg.CalibPotential(nd))
+				p.Plus(q)
 			} else {
-				count[nd] = infalg.CalibPotential(nd).Copy()
+				count[nd] = q.Copy()
 			}
 		}
 	}
@@ -140,6 +141,6 @@ func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
 
 	// updates loglikelihood of optimized model
 	// m.SetLoglikelihood(ds, ll)
-	log.Printf("\t>>emlearner: tot ll= %v\n", ll)
+	// log.Printf("\t>>emlearner: tot ll= %v\n", ll)
 	return ll
 }

@@ -118,11 +118,12 @@ func runParamLearner() {
 	eml.SetProperties(props)
 	log.Println("Learning parameters")
 	start := time.Now()
-	m, ll := eml.Run(ct, dataSet.IntMaps())
+	m, ll, it := eml.Run(ct, dataSet.IntMaps())
 	elapsed := time.Since(start)
 
 	log.Printf("========== SOLUTION ==============================\n")
 	log.Printf("Time: %v\n", elapsed)
+	log.Printf("Iterations: %v\n", it)
 	log.Printf("LogLikelihood: %.6f\n", ll)
 	log.Printf("--------------------------------------------------\n")
 

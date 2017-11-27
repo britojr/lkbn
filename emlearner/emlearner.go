@@ -26,7 +26,7 @@ const (
 // EMLearner implements Expectation-Maximization algorithm
 type EMLearner interface {
 	SetProperties(props map[string]string)
-	Run(m model.Model, evset []map[int]int) (model.Model, float64)
+	Run(m model.Model, evset []map[int]int) (model.Model, float64, int)
 }
 
 // implementation of EMLearner
@@ -78,7 +78,7 @@ func (e *emAlg) start(infalg inference.InfAlg, evset []map[int]int) {
 }
 
 // Run runs EM until convergence or max iteration number is reached
-func (e *emAlg) Run(m model.Model, evset []map[int]int) (model.Model, float64) {
+func (e *emAlg) Run(m model.Model, evset []map[int]int) (model.Model, float64, int) {
 	e.PrintProperties()
 	log.Printf("emlearner: start\n")
 	infalg := inference.NewCTreeCalibration(m)
@@ -92,13 +92,13 @@ func (e *emAlg) Run(m model.Model, evset []map[int]int) (model.Model, float64) {
 			if e.nIters >= e.maxIters || (math.Abs((llnew-llant)/llant) < e.threshold) {
 				break
 			}
-			log.Printf("\temlearner: diff=%v\n", math.Abs((llnew-llant)/llant))
+			// log.Printf("\temlearner: diff=%v\n", math.Abs((llnew-llant)/llant))
 		}
-		log.Printf("\temlearner: new=%v\n", llnew)
+		// log.Printf("\temlearner: new=%v\n", llnew)
 		llant = llnew
 	}
 	log.Printf("emlearner: iterations=%v\n", e.nIters)
-	return infalg.UpdatedModel(), llnew
+	return infalg.UpdatedModel(), llnew, e.nIters
 }
 
 // runStep runs expectation and maximization steps

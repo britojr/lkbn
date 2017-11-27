@@ -94,7 +94,7 @@ nodes:
 		ctout := model.FromString(tt.ctout)
 		got := inf.UpdatedModel().(*model.CTree)
 		if !got.Equal(ctout) {
-			// t.Errorf("wrong ctree:\n%v\n!=\n%v\n", got, ctout)
+			t.Errorf("wrong ctree:\n%v\n!=\n%v\n", got, ctout)
 		}
 	}
 }

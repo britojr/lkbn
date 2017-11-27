@@ -20,6 +20,11 @@ func TestReadWrite(t *testing.T) {
 	}}
 	for _, tt := range cases {
 		cta := SampleUniform(tt.vs, tt.k)
+		// fmt.Println(cta)
+		n := len(cta.VarsNeighbors())
+		if n != len(tt.vs) {
+			t.Errorf("sample wrong number of variables %v != %v", len(tt.vs), n)
+		}
 		// for _, nd := range cta.Nodes() {
 		// 	nd.Potential().RandomDistribute()
 		// }
@@ -28,6 +33,7 @@ func TestReadWrite(t *testing.T) {
 		f.Close()
 		cta.Write(f.Name())
 		ctb := Read(f.Name())
+		// fmt.Println(ctb)
 
 		queue := []*CTNode{cta.Root()}
 		for len(queue) > 0 {

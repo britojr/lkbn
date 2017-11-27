@@ -68,10 +68,12 @@ func FromString(strct string) (c *CTree) {
 		nd := new(CTNode)
 		var vs vars.VarList
 		for _, tv := range tnd.ClqVars {
-			vs = append(vs, vm[tv])
+			vs.Add(vm[tv])
 		}
 		nd.pot = factor.New(vs...)
-		nd.pot.SetValues(tnd.Values)
+		if len(tnd.Values) > 0 {
+			nd.pot.SetValues(tnd.Values)
+		}
 		c.nodes = append(c.nodes, nd)
 		if len(tnd.Parent) == 0 {
 			c.root = nd
@@ -83,7 +85,7 @@ func FromString(strct string) (c *CTree) {
 		}
 		var vs vars.VarList
 		for _, tv := range tnd.Parent {
-			vs = append(vs, vm[tv])
+			vs.Add(vm[tv])
 		}
 		pa := c.FindNode(vs)
 		c.nodes[i].parent = pa
@@ -138,9 +140,9 @@ func SampleUniform(vs vars.VarList, k int) *CTree {
 	children, clqs := ktree.UniformSampleAdj(n, k)
 	nodes := []*CTNode(nil)
 	for i := range clqs {
-		cvars := make([]*vars.Var, 0, len(clqs[i]))
+		var cvars vars.VarList
 		for _, v := range clqs[i] {
-			cvars = append(cvars, vs[v])
+			cvars.Add(vs[v])
 		}
 		nd := new(CTNode)
 		nd.pot = factor.New(cvars...)
@@ -171,12 +173,14 @@ func (c *CTree) VarsNeighbors() map[*vars.Var]vars.VarList {
 		for i := 0; i < len(vs); i++ {
 			for j := i + 1; j < len(vs); j++ {
 				if _, ok := m[vs[i]]; ok {
-					m[vs[i]] = m[vs[i]].Add(vs[j])
+					v := m[vs[i]]
+					m[vs[i]] = v.Add(vs[j])
 				} else {
 					m[vs[i]] = []*vars.Var{vs[j]}
 				}
 				if _, ok := m[vs[j]]; ok {
-					m[vs[j]] = m[vs[j]].Add(vs[i])
+					v := m[vs[j]]
+					m[vs[j]] = v.Add(vs[i])
 				} else {
 					m[vs[j]] = []*vars.Var{vs[i]}
 				}

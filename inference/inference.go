@@ -5,7 +5,7 @@ import (
 
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/model"
-	"github.com/gonum/floats"
+	"gonum.org/v1/gonum/floats"
 )
 
 // InfAlg defines an inference algorithm

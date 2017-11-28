@@ -15,6 +15,7 @@ import (
 const (
 	ParmMaxIters  = "em_max_iters" // maximum number of iterations
 	ParmThreshold = "em_threshold" // minimum improvement threshold
+	ParmReuse     = "em_use_parms" // use parms of the given model as starting point
 )
 
 // default properties
@@ -33,6 +34,7 @@ type EMLearner interface {
 type emAlg struct {
 	maxIters  int     // max number of em iterations
 	threshold float64 // minimum improvement threshold
+	reuse     bool    // use parms of the given model
 	nIters    int     // number of iterations of current alg
 }
 
@@ -53,6 +55,9 @@ func (e *emAlg) SetProperties(props map[string]string) {
 	if threshold, ok := props[ParmThreshold]; ok {
 		e.threshold = conv.Atof(threshold)
 	}
+	if reuse, ok := props[ParmReuse]; ok {
+		e.reuse = conv.Atob(reuse)
+	}
 	// validate properties
 	if e.maxIters <= 0 {
 		log.Panicf("emlearner: max iterations (%v) must be > 0", e.maxIters)
@@ -72,6 +77,9 @@ func (e *emAlg) PrintProperties() {
 func (e *emAlg) start(infalg inference.InfAlg, evset []map[int]int) {
 	// TODO: add a non-trivial em (re)start policy
 	// for now, just randomly starts
+	if e.reuse {
+		return
+	}
 	for _, nd := range infalg.CTNodes() {
 		nd.Potential().RandomDistribute()
 	}

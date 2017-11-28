@@ -1,7 +1,6 @@
 package model
 
 import (
-	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/vars"
 )
@@ -30,9 +29,14 @@ func (b *BNet) Better(other interface{}) bool {
 	panic("not implemented")
 }
 
-// ComputeScore ..
-func (b *BNet) ComputeScore(ds *data.Dataset) float64 {
-	panic("not implemented")
+// Score return ctree score
+func (b *BNet) Score() float64 {
+	return b.score
+}
+
+// SetScore set ctree score
+func (b *BNet) SetScore(score float64) {
+	b.score = score
 }
 
 // ToCTree return a ctree for this bnet

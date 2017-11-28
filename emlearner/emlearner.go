@@ -94,7 +94,7 @@ func (e *emAlg) Run(m model.Model, evset []map[int]int) (model.Model, float64, i
 			}
 			// log.Printf("\temlearner: diff=%v\n", math.Abs((llnew-llant)/llant))
 		}
-		// log.Printf("\temlearner: new=%v\n", llnew)
+		log.Printf("\temlearner: new=%v\n", llnew)
 		llant = llnew
 	}
 	log.Printf("emlearner: iterations=%v\n", e.nIters)
@@ -109,7 +109,6 @@ func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
 	var ll float64
 	// expecttation step
 	for _, evid := range evset {
-		// evid is a map of var to state
 		evLkhood := infalg.Run(evid)
 		// log.Printf("\t>>emlearner: evidlkhood= %v\n", evLkhood)
 		if evLkhood == 0 {
@@ -129,18 +128,15 @@ func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
 	}
 
 	// maximization step
-	// updates parameters
 	for nd, p := range count {
 		if pa := nd.Parent(); pa != nil {
 			p.Normalize(nd.Potential().Variables().Diff(pa.Potential().Variables())...)
 		} else {
 			p.Normalize()
 		}
+		// updates parameters
 		nd.SetPotential(p)
 	}
-
-	// updates loglikelihood of optimized model
-	// m.SetLoglikelihood(ds, ll)
 	// log.Printf("\t>>emlearner: tot ll= %v\n", ll)
 	return ll
 }

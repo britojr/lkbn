@@ -88,7 +88,7 @@ func (e *emAlg) start(infalg inference.InfAlg, evset []map[int]int) {
 // Run runs EM until convergence or max iteration number is reached
 func (e *emAlg) Run(m model.Model, evset []map[int]int) (model.Model, float64, int) {
 	e.PrintProperties()
-	log.Printf("emlearner: start\n")
+	// log.Printf("emlearner: start\n")
 	infalg := inference.NewCTreeCalibration(m)
 	e.nIters = 0
 	e.start(infalg, evset)
@@ -102,10 +102,10 @@ func (e *emAlg) Run(m model.Model, evset []map[int]int) (model.Model, float64, i
 			}
 			// log.Printf("\temlearner: diff=%v\n", math.Abs((llnew-llant)/llant))
 		}
-		log.Printf("\temlearner: new=%v\n", llnew)
+		// log.Printf("\temlearner: new=%v\n", llnew)
 		llant = llnew
 	}
-	log.Printf("emlearner: iterations=%v\n", e.nIters)
+	// log.Printf("emlearner: iterations=%v\n", e.nIters)
 	return infalg.UpdatedModel(), llnew, e.nIters
 }
 
@@ -120,7 +120,7 @@ func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
 		evLkhood := infalg.Run(evid)
 		// log.Printf("\t>>emlearner: evidlkhood= %v\n", evLkhood)
 		if evLkhood == 0 {
-			panic("emlearner: invalid log(0)")
+			log.Panicf("emlearner: invalid probo of evidence == 0")
 		}
 		ll += math.Log(evLkhood)
 

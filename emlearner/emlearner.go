@@ -27,7 +27,7 @@ const (
 // EMLearner implements Expectation-Maximization algorithm
 type EMLearner interface {
 	SetProperties(props map[string]string)
-	Run(m model.Model, evset []map[int]int) (model.Model, float64, int)
+	Run(m *model.CTree, evset []map[int]int) (*model.CTree, float64, int)
 }
 
 // implementation of EMLearner
@@ -35,7 +35,8 @@ type emAlg struct {
 	maxIters  int     // max number of em iterations
 	threshold float64 // minimum improvement threshold
 	reuse     bool    // use parms of the given model
-	nIters    int     // number of iterations of current alg
+
+	nIters int // number of iterations of current alg
 }
 
 // New creates a new EMLearner
@@ -86,7 +87,7 @@ func (e *emAlg) start(infalg inference.InfAlg, evset []map[int]int) {
 }
 
 // Run runs EM until convergence or max iteration number is reached
-func (e *emAlg) Run(m model.Model, evset []map[int]int) (model.Model, float64, int) {
+func (e *emAlg) Run(m *model.CTree, evset []map[int]int) (*model.CTree, float64, int) {
 	e.PrintProperties()
 	// log.Printf("emlearner: start\n")
 	infalg := inference.NewCTreeCalibration(m)
@@ -106,7 +107,7 @@ func (e *emAlg) Run(m model.Model, evset []map[int]int) (model.Model, float64, i
 		llant = llnew
 	}
 	// log.Printf("emlearner: iterations=%v\n", e.nIters)
-	return infalg.UpdatedModel(), llnew, e.nIters
+	return infalg.CTree(), llnew, e.nIters
 }
 
 // runStep runs expectation and maximization steps

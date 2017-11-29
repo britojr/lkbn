@@ -11,20 +11,16 @@ type SampleSearch struct {
 	mutInfo *scr.MutInfo // pre-computed mutual information matrix
 }
 
-// NewSampleSearch creates a instance of the sample stragegy
-func NewSampleSearch() Learner {
+// NewCTSampleSearch creates a instance of the sample stragegy
+func NewCTSampleSearch() Learner {
 	return &SampleSearch{common: newCommon()}
 }
 
 // Search searches for a network structure
 func (s *SampleSearch) Search() Solution {
-	ct := s.sampleCTree()
+	ct := model.SampleUniform(s.vs, s.tw)
 	s.paramLearner.Run(ct, s.ds.IntMaps())
 	return ct
-}
-
-func (s *SampleSearch) sampleCTree() *model.CTree {
-	return model.SampleUniform(s.vs, s.tw)
 }
 
 // TODO: move this to 'selected' strategy

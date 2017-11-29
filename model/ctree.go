@@ -38,11 +38,11 @@ func NewCTree() *CTree {
 	return new(CTree)
 }
 
-// Read creates new CTree from file
-func Read(fname string) (c *CTree) {
+// ReadCTree creates new CTree from file
+func ReadCTree(fname string) (c *CTree) {
 	data, err := ioutil.ReadFile(fname)
 	errchk.Check(err, "")
-	return FromString(string(data))
+	return CTreeFromString(string(data))
 }
 
 // Write writes CTree on file
@@ -53,8 +53,8 @@ func (c *CTree) Write(fname string) {
 	f.Close()
 }
 
-// FromString creates new CTree from string
-func FromString(strct string) (c *CTree) {
+// CTreeFromString creates new CTree from string
+func CTreeFromString(strct string) (c *CTree) {
 	t := codedTree{}
 	errchk.Check(yaml.Unmarshal([]byte(strct), &t), "")
 	c = new(CTree)
@@ -231,17 +231,6 @@ func (c *CTree) FindNode(vs vars.VarList) *CTNode {
 		}
 	}
 	return nil
-}
-
-// Families return map of var to family
-func (c *CTree) Families() map[*vars.Var]*CTNode {
-	// return c.family
-	panic("not implemented")
-}
-
-// ToCTree return a ctree for this
-func (c *CTree) ToCTree() *CTree {
-	return c
 }
 
 // CTNode defines a clique tree node

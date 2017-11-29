@@ -69,7 +69,7 @@ func initSubcommands() {
 	ctLearnComm.StringVar(&dataFile, "d", "", "dataset file in csv format")
 	ctLearnComm.StringVar(&parmFile, "p", "", "parameters file")
 	ctLearnComm.StringVar(&modelFile, "b", "", "network output file")
-	ctLearnComm.StringVar(&learnerAlg, "a", learner.AlgSampleSearch, "learner algorithm")
+	ctLearnComm.StringVar(&learnerAlg, "a", learner.AlgCTSampleSearch, "learner algorithm")
 	ctLearnComm.IntVar(&timeAvailable, "t", 60, "available time to search solution (0->unbounded)")
 	ctLearnComm.IntVar(&numSolutions, "i", 1, "max number of iterations (0->unbounded)")
 

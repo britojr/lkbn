@@ -10,7 +10,7 @@ import (
 
 // search algorithms names
 const (
-	AlgSampleSearch = "ctsample"
+	AlgCTSampleSearch = "ctsample"
 )
 
 // file parameters fields
@@ -39,7 +39,7 @@ type Solution interface {
 // Create creates a structure learner algorithm
 func Create(learnerAlg string) (lr Learner) {
 	creators := map[string]func() Learner{
-		AlgSampleSearch: NewSampleSearch,
+		AlgCTSampleSearch: NewCTSampleSearch,
 	}
 	if create, ok := creators[learnerAlg]; ok {
 		lr = create()

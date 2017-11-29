@@ -1,8 +1,6 @@
 package inference
 
 import (
-	"log"
-
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/model"
 	"gonum.org/v1/gonum/floats"
@@ -13,12 +11,11 @@ type InfAlg interface {
 	Run(map[int]int) float64
 	CTNodes() []*model.CTNode
 	CalibPotential(nd *model.CTNode) *factor.Factor
-	UpdatedModel() model.Model
+	CTree() *model.CTree
 }
 
 type cTCalib struct {
 	ct                *model.CTree
-	m                 model.Model
 	size              int
 	initPot, calibPot map[*model.CTNode]*factor.Factor
 
@@ -28,11 +25,10 @@ type cTCalib struct {
 	prev, post map[*model.CTNode][]*factor.Factor
 }
 
-// NewCTreeCalibration creates a new clique tree calibration runner
-func NewCTreeCalibration(m model.Model) InfAlg {
+// NewCTreeCalibration creates a new clique tree calibration inference algorithm
+func NewCTreeCalibration(ct *model.CTree) InfAlg {
 	c := new(cTCalib)
-	c.m = m
-	c.ct = m.ToCTree()
+	c.ct = ct
 	c.size = c.ct.Len()
 
 	// initialize slices to be used on calibration
@@ -45,24 +41,9 @@ func NewCTreeCalibration(m model.Model) InfAlg {
 	return c
 }
 
-// UpdatedModel updates model's parameters based on the internal ctree
-func (c *cTCalib) UpdatedModel() model.Model {
-	// TODO: check if it needs to calibrate without evidence first
-	// c.Run(map[int]int{})
-	switch m := c.m.(type) {
-	case *model.CTree:
-		return c.ct
-	case *model.BNet:
-		for v, nd := range c.ct.Families() {
-			bnd := m.Node(v)
-			p := nd.Potential().Copy().Marginalize(bnd.Potential().Variables()...)
-			p.Normalize(bnd.Variable())
-			bnd.SetPotential(p)
-		}
-	default:
-		log.Panicf("unsuported model type")
-	}
-	return c.m
+// CTree returns the internal ctree
+func (c *cTCalib) CTree() *model.CTree {
+	return c.ct
 }
 
 // Nodes returns reference for ctree nodes
@@ -75,6 +56,7 @@ func (c *cTCalib) CalibPotential(nd *model.CTNode) *factor.Factor {
 	return c.calibPot[nd]
 }
 
+// Run performs inference and returns the probability of the given evidence
 func (c *cTCalib) Run(e map[int]int) float64 {
 	c.applyEvidence(e)
 	c.upDownCalibration()

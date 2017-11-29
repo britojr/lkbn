@@ -24,11 +24,28 @@ func runCTLearnComm() {
 	if !verbose {
 		log.SetOutput(ioutil.Discard)
 	}
-
-	runLearner()
+	runCTLearner()
 }
 
-func runLearner() {
+func runCTParamLearnComm() {
+	// Required Flags
+	if dataFile == "" {
+		fmt.Printf("\n error: missing dataset file\n\n")
+		ctParamLearnComm.PrintDefaults()
+		os.Exit(1)
+	}
+	if modelFIn == "" {
+		fmt.Printf("\n error: missing model structure file\n\n")
+		ctParamLearnComm.PrintDefaults()
+		os.Exit(1)
+	}
+	if !verbose {
+		log.SetOutput(ioutil.Discard)
+	}
+	runCTParamLearner()
+}
+
+func runCTLearner() {
 	log.Printf("=========== BEGIN MODEL LEARNING =================\n")
 	log.Printf("Dataset file: '%v'\n", dataFile)
 	log.Printf("Learning algorithm: '%v'\n", learnerAlg)
@@ -43,6 +60,7 @@ func runLearner() {
 		log.Println("Reading parameters file")
 		props = ioutl.ReadYaml(parmFile)
 	}
+	log.Println("Reading dataset file")
 	dataSet := data.NewDataset(dataFile)
 
 	log.Println("Initializong learning algorithm")
@@ -67,36 +85,11 @@ func runLearner() {
 	log.Printf("--------------------------------------------------\n")
 
 	if len(modelFile) > 0 {
-		writeSolution(modelFile, m.(model.Model), alg)
+		writeSolution(modelFile, m.(*model.CTree), alg)
 	}
 }
 
-func writeSolution(fname string, m model.Model, alg learner.Learner) {
-	log.Printf("Printing solution: '%v'\n", fname)
-	f := ioutl.CreateFile(fname)
-	defer f.Close()
-}
-
-func runCTParamLearnComm() {
-	// Required Flags
-	if dataFile == "" {
-		fmt.Printf("\n error: missing dataset file\n\n")
-		ctParamLearnComm.PrintDefaults()
-		os.Exit(1)
-	}
-	if modelFIn == "" {
-		fmt.Printf("\n error: missing model structure file\n\n")
-		ctParamLearnComm.PrintDefaults()
-		os.Exit(1)
-	}
-	if !verbose {
-		log.SetOutput(ioutil.Discard)
-	}
-
-	runParamLearner()
-}
-
-func runParamLearner() {
+func runCTParamLearner() {
 	log.Printf("=========== BEGIN MODEL LEARNING =================\n")
 	log.Printf("Dataset file: '%v'\n", dataFile)
 	log.Printf("Parameters file: '%v'\n", parmFile)
@@ -109,10 +102,11 @@ func runParamLearner() {
 		log.Println("Reading parameters file")
 		props = ioutl.ReadYaml(parmFile)
 	}
+	log.Println("Reading dataset file")
 	dataSet := data.NewDataset(dataFile)
 
 	log.Println("Reading model structure")
-	ct := model.Read(modelFIn)
+	ct := model.ReadCTree(modelFIn)
 	log.Println("Initializong parameter learner")
 	eml := emlearner.New()
 	eml.SetProperties(props)
@@ -130,4 +124,9 @@ func runParamLearner() {
 	if len(modelFOut) > 0 {
 		writeSolution(modelFOut, m, nil)
 	}
+}
+
+func writeSolution(fname string, m *model.CTree, alg learner.Learner) {
+	log.Printf("Printing solution: '%v'\n", fname)
+	m.Write(fname)
 }

@@ -82,7 +82,7 @@ nodes:
 			3*math.Log(0.089912*0.5467096882085889*0.4277003452760941),
 	}}
 	for _, tt := range cases {
-		ctin := model.FromString(tt.ctin)
+		ctin := model.CTreeFromString(tt.ctin)
 		e := new(emAlg)
 		e.maxIters = 0
 		e.threshold = 1e-8
@@ -91,8 +91,8 @@ nodes:
 		if !floats.AlmostEqual(tt.ll, ll, tol) {
 			t.Errorf("wrong ll %v != %v", tt.ll, ll)
 		}
-		ctout := model.FromString(tt.ctout)
-		got := inf.UpdatedModel().(*model.CTree)
+		ctout := model.CTreeFromString(tt.ctout)
+		got := inf.CTree()
 		if !got.Equal(ctout) {
 			t.Errorf("wrong ctree:\n%v\n!=\n%v\n", got, ctout)
 		}

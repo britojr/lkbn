@@ -1,3 +1,4 @@
+// Package data is used to handle datasets
 package data
 
 import (
@@ -9,7 +10,7 @@ import (
 	"github.com/kniren/gota/dataframe"
 )
 
-// Dataset ..
+// Dataset extends a dataframe to also deal with variables
 type Dataset struct {
 	vs vars.VarList
 	df dataframe.DataFrame

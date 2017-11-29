@@ -32,7 +32,7 @@ func TestReadWrite(t *testing.T) {
 		errchk.Check(err, "")
 		f.Close()
 		cta.Write(f.Name())
-		ctb := Read(f.Name())
+		ctb := ReadCTree(f.Name())
 		// fmt.Println(ctb)
 
 		queue := []*CTNode{cta.Root()}

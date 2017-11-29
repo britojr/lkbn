@@ -64,3 +64,27 @@ func TestReadWrite(t *testing.T) {
 		}
 	}
 }
+
+func TestCopy(t *testing.T) {
+	cases := []struct {
+		vs vars.VarList
+		k  int
+	}{{
+		vars.NewList([]int{0, 1, 2, 3, 4}, []int{2, 2, 2, 2, 2}), 2,
+	}, {
+		vars.NewList([]int{0, 1, 2, 3, 4, 5}, []int{2, 2, 2, 2, 2, 2}), 3,
+	}}
+	for _, tt := range cases {
+		cta := SampleUniform(tt.vs, tt.k)
+		ctb := cta.Copy()
+		mcta, mctb := cta.VarsNeighbors(), ctb.VarsNeighbors()
+		for v, vs := range mcta {
+			if !mctb[v].Equal(vs) {
+				t.Errorf("wrong neighbors of %v: %v != %v", v, vs, mctb[v])
+			}
+		}
+		// if !cta.Equal(ctb) {
+		// 	t.Errorf("different copy!\n%v\n!=\n%v\n", cta, ctb)
+		// }
+	}
+}

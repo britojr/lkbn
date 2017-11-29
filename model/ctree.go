@@ -15,10 +15,10 @@ import (
 // a CTree is a way to group the potentials of the model according to its cliques
 // the potentials assossiated with each clique are pointers to the same factors present in the model
 type CTree struct {
-	nodes  []*CTNode
-	root   *CTNode
-	family map[*vars.Var]*CTNode
-	score  float64
+	nodes []*CTNode
+	root  *CTNode
+	score float64
+	// family map[*vars.Var]*CTNode
 }
 
 type codedTree struct {
@@ -158,6 +158,40 @@ func SampleUniform(vs vars.VarList, k int) *CTree {
 	ct.nodes = nodes
 	ct.root = nodes[0]
 	return ct
+}
+
+// Copy creates a copy of this
+func (c *CTree) Copy() (o *CTree) {
+	if c.root == nil {
+		panic("ctree: no root")
+	}
+	o = new(CTree)
+	o.root = copyNode(c.root)
+	o.nodes = bfsNodes(o.root)
+	return
+}
+
+func copyNode(nd *CTNode) (o *CTNode) {
+	o = new(CTNode)
+	o.pot = nd.pot.Copy()
+	for i, ch := range nd.children {
+		o.children = append(o.children, copyNode(ch))
+		o.children[i].parent = o
+	}
+	return
+}
+
+func bfsNodes(nd *CTNode) []*CTNode {
+	nodes := []*CTNode{nd}
+	i := 0
+	for i < len(nodes) {
+		pa := nodes[i]
+		i++
+		for _, ch := range pa.children {
+			nodes = append(nodes, ch)
+		}
+	}
+	return nodes
 }
 
 // Equal compares cliques and values of two ctrees

@@ -1,0 +1,7 @@
+# parameters learning
+em_max_iters: 95
+em_threshold: 1e-2
+em_use_parms: true
+
+em_init_iters : 1
+em_restarts   : 4

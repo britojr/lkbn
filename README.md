@@ -27,12 +27,14 @@ ___
 ### Examples:
 
 ...
+Learn parameters for a given structure:
 
 	cd examples/
+	lkbn ctparam -d example.csv -bi example#0.ctree -bo example#1.ctree -p parms.yaml
 
 Sample 10 clique tree structures with tree-width 3:
 
-	ctsample -d example.csv -s 10 -k 3
+	ctsample -d example.csv -s 10 -k 3 -p parms-sample.yaml
 
 #### Parameters file:
 
@@ -40,9 +42,13 @@ YAML file containing specific parameters for the learning algorithms
 
 ##### Parameters file fields:
 
-	treewidth:		structure's tree-width upper bound
+	em_max_iters:		max number of EM iterations
 
 ##### Parameters file example:
 
-	./examples/example-parms.yaml
-	treewidth: 4
+	./examples/parms.yaml
+	em_max_iters  : 100
+	em_threshold  : 1e-2
+	em_use_parms  : true
+	em_init_iters : 5
+	em_restarts   : 8

@@ -75,24 +75,23 @@ func (e *emAlg) PrintProperties() {
 }
 
 // start defines a starting point for model's parameters
-func (e *emAlg) start(infalg inference.InfAlg, evset []map[int]int) {
+func (e *emAlg) start(m *model.CTree, evset []map[int]int) inference.InfAlg {
 	// TODO: add a non-trivial em (re)start policy
 	// for now, just randomly starts
-	if e.reuse {
-		return
+	infalg := inference.NewCTreeCalibration(m)
+	if !e.reuse {
+		for _, nd := range infalg.CTNodes() {
+			nd.Potential().RandomDistribute()
+		}
 	}
-	for _, nd := range infalg.CTNodes() {
-		nd.Potential().RandomDistribute()
-	}
+	return infalg
 }
 
 // Run runs EM until convergence or max iteration number is reached
 func (e *emAlg) Run(m *model.CTree, evset []map[int]int) (*model.CTree, float64, int) {
 	e.PrintProperties()
-	// log.Printf("emlearner: start\n")
-	infalg := inference.NewCTreeCalibration(m)
 	e.nIters = 0
-	e.start(infalg, evset)
+	infalg := e.start(m, evset)
 	var llant, llnew float64
 	for {
 		llnew = e.runStep(infalg, evset)

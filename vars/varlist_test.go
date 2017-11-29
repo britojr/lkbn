@@ -63,7 +63,7 @@ func TestEqual(t *testing.T) {
 			t.Errorf("wrong compare result %v != %v", tt.eq, got)
 		}
 		if tt.vb.Equal(tt.va) != got {
-			t.Errorf("equal fucntion should be simetric %v != %v", tt.vb.Equal(tt.va), got)
+			t.Errorf("equal function should be simetric %v != %v", tt.vb.Equal(tt.va), got)
 		}
 	}
 }

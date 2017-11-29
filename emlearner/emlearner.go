@@ -17,7 +17,7 @@ const (
 	ParmMaxIters  = "em_max_iters"  // maximum number of iterations
 	ParmThreshold = "em_threshold"  // minimum improvement threshold
 	ParmReuse     = "em_use_parms"  // use parms of the given model as starting point
-	ParmInitIters = "em_init_iters" // number of intial iterations
+	ParmInitIters = "em_init_iters" // number of initial iterations
 	ParmRestarts  = "em_restarts"   // number of starting points
 )
 
@@ -100,7 +100,7 @@ func (e *emAlg) PrintProperties() {
 
 // start defines a starting point for model's parameters
 func (e *emAlg) start(m *model.CTree, evset []map[int]int) inference.InfAlg {
-	// set intial candidates
+	// set initial candidates
 	infalg := make([]inference.InfAlg, e.numRestarts)
 	infalg[0] = inference.NewCTreeCalibration(m)
 	if !e.reuse {

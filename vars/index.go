@@ -37,7 +37,7 @@ func (ix *Index) Ended() bool {
 	return ix.current < 0
 }
 
-// Reset set index to begining value
+// Reset set index to beginning value
 func (ix *Index) Reset() {
 	ix.current = 0
 	for i := range ix.attrb {

@@ -60,7 +60,7 @@ func (c *cTCalib) CalibPotential(nd *model.CTNode) *factor.Factor {
 func (c *cTCalib) Run(e map[int]int) float64 {
 	c.applyEvidence(e)
 	c.upDownCalibration()
-	// after applying evidence and calibratin
+	// after applying evidence and calibration
 	// the sum of any potential is probability of evidence
 	return floats.Sum(c.calibPot[c.ct.Root()].Values())
 }

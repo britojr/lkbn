@@ -8,7 +8,7 @@ func TestCopy(t *testing.T) {
 	}{
 		{[]*Var{}},
 		{[]*Var(nil)},
-		{[]*Var{New(0, 2), New(3, 2), New(5, 4)}},
+		{[]*Var{New(0, 2, "", false), New(3, 2, "", false), New(5, 4, "", false)}},
 	}
 	for _, tt := range cases {
 		w := tt.vl.Copy()
@@ -17,10 +17,10 @@ func TestCopy(t *testing.T) {
 		}
 		// test if its safe for change
 		if len(tt.vl) > 0 {
-			w[0] = New(9, 2)
+			w[0] = New(9, 2, "", false)
 		} else {
-			w = append(w, New(9, 2))
-			tt.vl = append(tt.vl, New(8, 2))
+			w = append(w, New(9, 2, "", false))
+			tt.vl = append(tt.vl, New(8, 2, "", false))
 		}
 		if tt.vl.Equal(w) {
 			t.Errorf("both are pointing to the same slice %v == %v", &tt.vl, &w)
@@ -35,7 +35,7 @@ func TestNStates(t *testing.T) {
 	}{
 		{[]*Var{}, 1},
 		{[]*Var(nil), 1},
-		{[]*Var{New(0, 2), New(3, 2), New(5, 4)}, 16},
+		{[]*Var{New(0, 2, "", false), New(3, 2, "", false), New(5, 4, "", false)}, 16},
 	}
 	for _, tt := range cases {
 		got := tt.vl.NStates()
@@ -52,10 +52,11 @@ func TestEqual(t *testing.T) {
 	}{
 		{[]*Var{}, []*Var{}, true},
 		{[]*Var(nil), []*Var(nil), true},
-		{[]*Var{New(0, 2), New(3, 2), New(5, 4)}, []*Var{New(0, 2), New(3, 2), New(5, 4)}, true},
-		{[]*Var{New(5, 4)}, []*Var{New(5, 3)}, true},
-		{[]*Var{New(0, 2)}, []*Var{New(0, 2), New(1, 2)}, false},
-		{[]*Var{New(0, 2), New(2, 2)}, []*Var{New(0, 2), New(1, 2)}, false},
+		{[]*Var{New(0, 2, "", false), New(3, 2, "", false), New(5, 4, "", false)},
+			[]*Var{New(0, 2, "", false), New(3, 2, "", false), New(5, 4, "", false)}, true},
+		{[]*Var{New(5, 4, "", false)}, []*Var{New(5, 3, "", false)}, true},
+		{[]*Var{New(0, 2, "", false)}, []*Var{New(0, 2, "", false), New(1, 2, "", false)}, false},
+		{[]*Var{New(0, 2, "", false), New(2, 2, "", false)}, []*Var{New(0, 2, "", false), New(1, 2, "", false)}, false},
 	}
 	for _, tt := range cases {
 		got := tt.va.Equal(tt.vb)
@@ -73,8 +74,8 @@ func TestNewList(t *testing.T) {
 		vs, ns []int
 		res    VarList
 	}{
-		{[]int{1, 5, 0}, []int{3, 2, 4}, []*Var{New(0, 4), New(1, 3), New(5, 2)}},
-		{[]int{1, 5, 0}, []int(nil), []*Var{New(0, 2), New(1, 2), New(5, 2)}},
+		{[]int{1, 5, 0}, []int{3, 2, 4}, []*Var{New(0, 4, "", false), New(1, 3, "", false), New(5, 2, "", false)}},
+		{[]int{1, 5, 0}, []int(nil), []*Var{New(0, 2, "", false), New(1, 2, "", false), New(5, 2, "", false)}},
 	}
 	for _, tt := range cases {
 		got := NewList(tt.vs, tt.ns)

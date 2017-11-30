@@ -7,7 +7,8 @@ func TestNewIndexFor(t *testing.T) {
 		indexVars, forVars VarList
 		seq                []int
 	}{{
-		[]*Var{New(0, 2), New(5, 3)}, []*Var{New(0, 2), New(3, 2), New(5, 3)},
+		[]*Var{New(0, 2, "", false), New(5, 3, "", false)},
+		[]*Var{New(0, 2, "", false), New(3, 2, "", false), New(5, 3, "", false)},
 		[]int{0, 1, 0, 1, 2, 3, 2, 3, 4, 5, 4, 5},
 	}}
 	for _, tt := range cases {

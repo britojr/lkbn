@@ -11,7 +11,7 @@ func TestNew(t *testing.T) {
 		{0, 0},
 	}
 	for _, tt := range cases {
-		v := New(tt.id, tt.nstate)
+		v := New(tt.id, tt.nstate, "", false)
 		if tt.id != v.ID() {
 			t.Errorf("wrong id %v != %v", tt.id, v.ID())
 		}

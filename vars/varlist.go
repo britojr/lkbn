@@ -9,9 +9,9 @@ type VarList []*Var
 func NewList(vs, ns []int) (w VarList) {
 	for i, v := range vs {
 		if i < len(ns) {
-			w = append(w, New(v, ns[i]))
+			w = append(w, New(v, ns[i], "", false))
 		} else {
-			w = append(w, New(v, DefaultNState))
+			w = append(w, New(v, DefaultNState, "", false))
 		}
 	}
 	sort.Slice(w, func(i int, j int) bool {

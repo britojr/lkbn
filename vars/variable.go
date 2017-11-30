@@ -15,11 +15,19 @@ type Var struct {
 }
 
 // New creates a new variable
-func New(id, nstate int) (v *Var) {
+func New(id, nstate int, name string, latent bool) (v *Var) {
 	v = new(Var)
 	v.id = id
 	v.nstate = nstate
-	v.name = fmt.Sprintf("x%v", id)
+	v.name = name
+	v.latent = latent
+	if name == "" {
+		if v.latent {
+			v.name = fmt.Sprintf("H%v", v.id)
+		} else {
+			v.name = fmt.Sprintf("X%v", id)
+		}
+	}
 	return
 }
 
@@ -39,7 +47,7 @@ func (v Var) Name() string {
 }
 
 // SetName set variable name
-func (v Var) SetName(name string) {
+func (v *Var) SetName(name string) {
 	v.name = name
 }
 
@@ -49,10 +57,10 @@ func (v Var) Latent() bool {
 }
 
 // SetLatent set latent variable
-func (v Var) SetLatent(latent bool) {
+func (v *Var) SetLatent(latent bool) {
 	v.latent = latent
 }
 
 func (v Var) String() string {
-	return fmt.Sprintf("x%v[%v]", v.id, v.nstate)
+	return fmt.Sprintf("%v[%v]", v.name, v.nstate)
 }

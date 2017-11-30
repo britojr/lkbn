@@ -55,8 +55,7 @@ func main() {
 
 	vs := ds.Variables().Copy()
 	for _, card := range latentVars {
-		v := vars.New(len(vs), card)
-		v.SetLatent(true)
+		v := vars.New(len(vs), card, "", true)
 		vs.Add(v)
 	}
 	dname := strings.TrimSuffix(dataFile, path.Ext(dataFile))

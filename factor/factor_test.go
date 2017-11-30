@@ -16,8 +16,8 @@ func TestNew(t *testing.T) {
 		vs vars.VarList
 	}{
 		{[]*vars.Var{}},
-		{[]*vars.Var{vars.New(0, 2)}},
-		{[]*vars.Var{vars.New(1, 4), vars.New(3, 2)}},
+		{[]*vars.Var{vars.New(0, 2, "", false)}},
+		{[]*vars.Var{vars.New(1, 4, "", false), vars.New(3, 2, "", false)}},
 	}
 	for _, tt := range cases {
 		got := New(tt.vs...)
@@ -283,7 +283,7 @@ func TestNormalize(t *testing.T) {
 }
 
 func TestRandom(t *testing.T) {
-	xs := []*vars.Var{vars.New(1, 4), vars.New(3, 2)}
+	xs := []*vars.Var{vars.New(1, 4, "", false), vars.New(3, 2, "", false)}
 	got := New(xs...)
 
 	got.RandomDistribute()

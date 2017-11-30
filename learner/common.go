@@ -84,14 +84,12 @@ func (s *common) Treewidth() int {
 func (s *common) addLatVars(latentVars ...int) {
 	if len(latentVars) == 0 {
 		for i := 0; i < s.nl; i++ {
-			v := vars.New(len(s.vs), s.lstates)
-			v.SetLatent(true)
+			v := vars.New(len(s.vs), s.lstates, "", true)
 			s.vs.Add(v)
 		}
 	} else {
 		for _, card := range latentVars {
-			v := vars.New(len(s.vs), card)
-			v.SetLatent(true)
+			v := vars.New(len(s.vs), card, "", true)
 			s.vs.Add(v)
 		}
 	}

@@ -23,8 +23,9 @@ type CTree struct {
 
 type codedTree struct {
 	Variables []struct {
-		Name string
-		Card int
+		Name   string
+		Card   int
+		Latent bool
 	}
 	Nodes []struct {
 		ClqVars []string
@@ -60,8 +61,7 @@ func CTreeFromString(strct string) (c *CTree) {
 	c = new(CTree)
 	vm := make(map[string]*vars.Var)
 	for i, tv := range t.Variables {
-		v := vars.New(i, tv.Card)
-		v.SetName(tv.Name)
+		v := vars.New(i, tv.Card, tv.Name, tv.Latent)
 		vm[tv.Name] = v
 	}
 	for _, tnd := range t.Nodes {
@@ -121,12 +121,14 @@ func (c *CTree) String() string {
 	}
 
 	t.Variables = make([]struct {
-		Name string
-		Card int
+		Name   string
+		Card   int
+		Latent bool
 	}, len(vm))
 	for i := range t.Variables {
 		t.Variables[i].Name = vm[i].Name()
 		t.Variables[i].Card = vm[i].NState()
+		t.Variables[i].Latent = vm[i].Latent()
 	}
 
 	d, err := yaml.Marshal(&t)

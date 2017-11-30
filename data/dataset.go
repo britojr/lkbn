@@ -24,8 +24,7 @@ func NewDataset(fname string) (d *Dataset) {
 	d.df = dataframe.ReadCSV(bufio.NewReader(f))
 	for id, name := range d.df.Names() {
 		nstate := int(d.df.Col(name).Max()) + 1
-		v := vars.New(id, nstate)
-		v.SetName(name)
+		v := vars.New(id, nstate, name, false)
 		d.vs = append(d.vs, v)
 	}
 	return

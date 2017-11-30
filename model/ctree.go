@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	"github.com/britojr/btbn/ktree"
@@ -50,6 +51,7 @@ func ReadCTree(fname string) (c *CTree) {
 func (c *CTree) Write(fname string) {
 	f := ioutl.CreateFile(fname)
 	d := []byte(c.String())
+	fmt.Fprintf(f, "# Score: %v\n", c.score)
 	f.Write(d)
 	f.Close()
 }

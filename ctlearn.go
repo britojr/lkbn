@@ -81,7 +81,7 @@ func runCTLearner() {
 		os.Exit(0)
 	}
 	log.Printf("Time: %v\n", elapsed)
-	log.Printf("Best Score: %.6f\n", m.Score())
+	log.Printf("LogLikelihood: %.6f\n", m.Score())
 	log.Printf("--------------------------------------------------\n")
 
 	if len(modelFile) > 0 {
@@ -110,6 +110,7 @@ func runCTParamLearner() {
 	log.Println("Initializong parameter learner")
 	eml := emlearner.New()
 	eml.SetProperties(props)
+	eml.PrintProperties()
 	log.Println("Learning parameters")
 	start := time.Now()
 	m, ll, it := eml.Run(ct, dataSet.IntMaps())

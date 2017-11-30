@@ -31,8 +31,9 @@ const (
 
 // EMLearner implements Expectation-Maximization algorithm
 type EMLearner interface {
-	SetProperties(props map[string]string)
 	Run(m *model.CTree, evset []map[int]int) (*model.CTree, float64, int)
+	SetProperties(props map[string]string)
+	PrintProperties()
 }
 
 // implementation of EMLearner
@@ -120,6 +121,7 @@ func (e *emAlg) start(m *model.CTree, evset []map[int]int) inference.InfAlg {
 		for i := range infalg {
 			ll := e.runStep(infalg[i], evset)
 			infalg[i].CTree().SetScore(ll)
+			// fmt.Printf("ini: %v=%v\n", i, ll)
 		}
 		e.nIters++
 	}
@@ -136,6 +138,7 @@ func (e *emAlg) start(m *model.CTree, evset []map[int]int) inference.InfAlg {
 					improved = true
 				}
 				ct.SetScore(ll)
+				// fmt.Printf("step: %v=%v\n", i, ll)
 			}
 			e.nIters++
 			if !improved {
@@ -160,7 +163,7 @@ func (e *emAlg) start(m *model.CTree, evset []map[int]int) inference.InfAlg {
 
 // Run runs EM until convergence or max iteration number is reached
 func (e *emAlg) Run(m *model.CTree, evset []map[int]int) (*model.CTree, float64, int) {
-	e.PrintProperties()
+	// e.PrintProperties()
 	e.nIters = 0
 	infalg := e.start(m, evset)
 	var llant, llnew float64
@@ -170,10 +173,9 @@ func (e *emAlg) Run(m *model.CTree, evset []map[int]int) (*model.CTree, float64,
 		if e.nIters >= e.maxIters || math.Abs(llnew-llant) < e.threshold {
 			break
 		}
+		// fmt.Printf("main: %v\t%v\n", llnew, math.Abs(llnew-llant))
 		llant = llnew
-		// log.Printf("\temlearner: new=%v\n", llnew)
 	}
-	// log.Printf("emlearner: iterations=%v\n", e.nIters)
 	infalg.CTree().SetScore(llnew)
 	return infalg.CTree(), llnew, e.nIters
 }
@@ -187,7 +189,6 @@ func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
 	// expecttation step
 	for _, evid := range evset {
 		evLkhood := infalg.Run(evid)
-		// log.Printf("\t>>emlearner: evidlkhood= %v\n", evLkhood)
 		if evLkhood == 0 {
 			log.Panicf("emlearner: invalid probo of evidence == 0")
 		}
@@ -214,6 +215,5 @@ func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
 		// updates parameters
 		nd.SetPotential(p)
 	}
-	// log.Printf("\t>>emlearner: tot ll= %v\n", ll)
 	return ll
 }

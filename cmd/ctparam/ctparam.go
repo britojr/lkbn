@@ -40,6 +40,7 @@ func main() {
 
 	eml := emlearner.New()
 	eml.SetProperties(props)
+	eml.PrintProperties()
 	for _, ctFile := range ctreefs {
 		ct := model.ReadCTree(ctFile)
 		start := time.Now()

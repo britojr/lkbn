@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/britojr/btbn/scr"
 	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
@@ -33,6 +34,7 @@ func main() {
 		os.Exit(1)
 	}
 	ds := data.NewDataset(dataFile)
+	mutInfo := scr.ComputeMutInf(dataFile)
 
 	var props map[string]string
 	if len(parmFile) > 0 {
@@ -59,9 +61,49 @@ func main() {
 		vs.Add(v)
 	}
 	dname := strings.TrimSuffix(dataFile, path.Ext(dataFile))
-	for i := 0; i < numSamples; i++ {
+	i := 0
+	for i < numSamples {
 		modelFOut := fmt.Sprintf("%s#%04d.ctree", dname, i)
 		ct := model.SampleUniform(vs, tw)
-		ct.Write(modelFOut)
+		mi := computeMIScore(ct, mutInfo)
+		if mi > 18 {
+			ct.Write(modelFOut)
+			i++
+		}
 	}
+}
+
+// TODO: remove this
+func computeMIScore(ct *model.CTree, mutInfo *scr.MutInfo) (mi float64) {
+	m := ct.VarsNeighbors()
+	for v, ne := range m {
+		for _, w := range ne {
+			if w.ID() < v.ID() {
+				break
+			}
+			mi += linkMI(v, w, m, mutInfo)
+		}
+	}
+	return
+}
+
+func linkMI(v, w *vars.Var, m map[*vars.Var]vars.VarList, mutInfo *scr.MutInfo) float64 {
+	if !v.Latent() && !w.Latent() {
+		return mutInfo.Get(v.ID(), w.ID())
+	}
+	if v.ID() > w.ID() {
+		v, w = w, v
+	}
+	ne := m[w].Diff(m[v])
+	var max float64
+	for _, u := range ne {
+		if u.ID() == v.ID() {
+			continue
+		}
+		mi := linkMI(v, u, m, mutInfo)
+		if mi > max {
+			max = mi
+		}
+	}
+	return max
 }

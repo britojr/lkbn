@@ -1,7 +1,11 @@
-# parameters learning
-em_max_iters: 95
-em_threshold: 1e-2
-em_use_parms: true
+# structure sampling
+treewidth     : 1
+num_samples   : 3
+latent_vars   : 7, 12
 
-em_init_iters : 1
+# parameters learning
+em_max_iters  : 20
+em_threshold  : 1e-5
+em_use_parms  : true
+em_init_iters : 2
 em_restarts   : 4

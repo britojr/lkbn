@@ -30,11 +30,11 @@ ___
 Learn parameters for a given structure:
 
 	cd examples/
-	lkbn ctparam -d example.csv -bi example#0.ctree -bo example#1.ctree -p parms.yaml
+	lkbn ctparam -d example.csv -p parms.yaml -bi example#0.ctree -bo example#1.ctree
 
-Sample 10 clique tree structures with tree-width 3:
+Sample clique tree structures:
 
-	ctsample -d example.csv -s 10 -k 3 -p parms-sample.yaml
+	ctsample -d example.csv -p parms.yaml
 
 #### Parameters file:
 
@@ -47,8 +47,14 @@ YAML file containing specific parameters for the learning algorithms
 ##### Parameters file example:
 
 	./examples/parms.yaml
-	em_max_iters  : 100
-	em_threshold  : 1e-2
+	# structure sampling
+	treewidth     : 1
+	num_samples   : 3
+	latent_vars   : 7, 12
+
+	# parameters learning
+	em_max_iters  : 20
+	em_threshold  : 1e-5
 	em_use_parms  : true
-	em_init_iters : 5
-	em_restarts   : 8
+	em_init_iters : 2
+	em_restarts   : 4

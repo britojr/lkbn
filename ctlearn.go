@@ -72,7 +72,7 @@ func runCTLearner() {
 
 	log.Println("Searching structure")
 	start := time.Now()
-	m := learner.Search(alg, numSolutions, timeAvailable)
+	m, it := learner.Search(alg, numSolutions, timeAvailable)
 	elapsed := time.Since(start)
 
 	log.Printf("========== SOLUTION ==============================\n")
@@ -81,6 +81,7 @@ func runCTLearner() {
 		os.Exit(0)
 	}
 	log.Printf("Time: %v\n", elapsed)
+	log.Printf("Iterations: %v\n", it)
 	log.Printf("LogLikelihood: %.6f\n", m.Score())
 	log.Printf("--------------------------------------------------\n")
 

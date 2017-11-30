@@ -51,14 +51,14 @@ func Create(learnerAlg string) (lr Learner) {
 }
 
 // Search applies the strategy to find the best solution
-func Search(alg Learner, numSolutions, timeAvailable int) Solution {
+func Search(alg Learner, numSolutions, timeAvailable int) (Solution, int) {
 	var best, current Solution
 	if numSolutions <= 0 && timeAvailable <= 0 {
 		numSolutions = 1
 	}
+	i := 0
 	if timeAvailable > 0 {
 		// TODO: the documentation recommends using NewTimer(d).C instead of time.After
-		i := 0
 		remaining := time.Duration(timeAvailable) * time.Second
 		for {
 			ch := make(chan Solution, 1)
@@ -86,12 +86,12 @@ func Search(alg Learner, numSolutions, timeAvailable int) Solution {
 			}
 		}
 	} else {
-		for i := 0; i < numSolutions; i++ {
+		for ; i < numSolutions; i++ {
 			current := alg.Search()
 			if best == nil || current.Score() > best.Score() {
 				best = current
 			}
 		}
 	}
-	return best
+	return best, i
 }

@@ -25,7 +25,6 @@ type common struct {
 func newCommon() *common {
 	s := new(common)
 	s.paramLearner = emlearner.New()
-	s.paramLearner.PrintProperties()
 	return s
 }
 
@@ -57,6 +56,7 @@ func (s *common) SetFileParameters(props map[string]string) {
 		}
 	}
 	s.paramLearner.SetProperties(props)
+	s.paramLearner.PrintProperties()
 	s.props = props
 }
 

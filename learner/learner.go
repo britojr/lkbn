@@ -15,8 +15,9 @@ const (
 
 // file parameters fields
 const (
-	ParmTreewidth = "treewidth"
-	ParmNumLatent = "num_latent"
+	ParmTreewidth  = "treewidth"   // structure treewidth
+	ParmNumLatent  = "num_latent"  // number of latent variables
+	ParmLatentVars = "latent_vars" // latent variables cardinalities
 	// ParmMaxParents = "max_parents"
 )
 

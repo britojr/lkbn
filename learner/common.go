@@ -2,6 +2,7 @@ package learner
 
 import (
 	"log"
+	"strings"
 
 	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/emlearner"
@@ -24,14 +25,14 @@ type common struct {
 func newCommon() *common {
 	s := new(common)
 	s.paramLearner = emlearner.New()
+	s.paramLearner.PrintProperties()
 	return s
 }
 
 func (s *common) SetDataset(ds *data.Dataset) {
 	s.ds = ds
-	s.vs = make([]*vars.Var, len(ds.Variables()))
 	s.nv = len(ds.Variables())
-	copy(s.vs, ds.Variables())
+	s.vs = ds.Variables().Copy()
 }
 
 func (s *common) SetDefaultParameters() {
@@ -46,6 +47,14 @@ func (s *common) SetFileParameters(props map[string]string) {
 	if nl, ok := props[ParmNumLatent]; ok {
 		s.nl = conv.Atoi(nl)
 		s.addLatVars()
+	} else {
+		if lvStr, ok := props[ParmLatentVars]; ok {
+			latentVars := conv.Satoi(strings.FieldsFunc(lvStr, func(r rune) bool {
+				return r == ',' || r == ' '
+			}))
+			s.nl = len(latentVars)
+			s.addLatVars(latentVars...)
+		}
 	}
 	s.paramLearner.SetProperties(props)
 	s.props = props
@@ -72,10 +81,18 @@ func (s *common) Treewidth() int {
 	return s.tw
 }
 
-func (s *common) addLatVars() {
-	for i := 0; i < s.nl; i++ {
-		v := vars.New(len(s.vs), s.lstates)
-		v.SetLatent(true)
-		s.vs = append(s.vs, v)
+func (s *common) addLatVars(latentVars ...int) {
+	if len(latentVars) == 0 {
+		for i := 0; i < s.nl; i++ {
+			v := vars.New(len(s.vs), s.lstates)
+			v.SetLatent(true)
+			s.vs.Add(v)
+		}
+	} else {
+		for _, card := range latentVars {
+			v := vars.New(len(s.vs), card)
+			v.SetLatent(true)
+			s.vs.Add(v)
+		}
 	}
 }

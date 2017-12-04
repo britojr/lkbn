@@ -49,3 +49,8 @@ func (d *Dataset) IntMaps() []map[int]int {
 func (d *Dataset) Variables() vars.VarList {
 	return d.vs
 }
+
+// DataFrame returns dataframe
+func (d *Dataset) DataFrame() dataframe.DataFrame {
+	return d.df
+}

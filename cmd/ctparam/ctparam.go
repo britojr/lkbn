@@ -10,8 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/britojr/btbn/scr"
 	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/emlearner"
+	"github.com/britojr/lkbn/learner"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/utl/ioutl"
 )
@@ -28,6 +30,7 @@ func main() {
 		os.Exit(1)
 	}
 	ds := data.NewDataset(dataFile)
+	mutInfo := scr.ComputeMutInf(dataFile)
 
 	var props map[string]string
 	if len(parmFile) > 0 {
@@ -51,6 +54,7 @@ func main() {
 		log.Printf("Time: %v\n", elapsed)
 		log.Printf("Iterations: %v\n", it)
 		log.Printf("LogLikelihood: %.6f\n", ll)
+		log.Printf("Linked MI: %.6f\n", learner.ComputeMIScore(ct, mutInfo))
 		log.Printf("--------------------------------------------------\n")
 
 		ct.Write(ctFile)

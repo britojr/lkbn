@@ -9,6 +9,7 @@ import (
 
 	"github.com/britojr/btbn/scr"
 	"github.com/britojr/lkbn/data"
+	"github.com/britojr/lkbn/learner"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
 	"github.com/britojr/utl/conv"
@@ -65,45 +66,11 @@ func main() {
 	for i < numSamples {
 		modelFOut := fmt.Sprintf("%s#%04d.ctree", dname, i)
 		ct := model.SampleUniform(vs, tw)
-		mi := computeMIScore(ct, mutInfo)
-		if mi > 18 {
+		mi := learner.ComputeMIScore(ct, mutInfo)
+		if mi > 19 {
 			ct.Write(modelFOut)
 			i++
+			fmt.Printf("%v: %v\n", i, mi)
 		}
 	}
-}
-
-// TODO: remove this
-func computeMIScore(ct *model.CTree, mutInfo *scr.MutInfo) (mi float64) {
-	m := ct.VarsNeighbors()
-	for v, ne := range m {
-		for _, w := range ne {
-			if w.ID() < v.ID() {
-				break
-			}
-			mi += linkMI(v, w, m, mutInfo)
-		}
-	}
-	return
-}
-
-func linkMI(v, w *vars.Var, m map[*vars.Var]vars.VarList, mutInfo *scr.MutInfo) float64 {
-	if !v.Latent() && !w.Latent() {
-		return mutInfo.Get(v.ID(), w.ID())
-	}
-	if v.ID() > w.ID() {
-		v, w = w, v
-	}
-	ne := m[w].Diff(m[v])
-	var max float64
-	for _, u := range ne {
-		if u.ID() == v.ID() {
-			continue
-		}
-		mi := linkMI(v, u, m, mutInfo)
-		if mi > max {
-			max = mi
-		}
-	}
-	return max
 }

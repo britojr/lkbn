@@ -1,7 +1,10 @@
 package learner
 
 import (
+	"log"
+
 	"github.com/britojr/btbn/scr"
+	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
 )
@@ -21,7 +24,16 @@ func NewCTSampleSearch() Learner {
 func (s *SampleSearch) Search() Solution {
 	ct := model.SampleUniform(s.vs, s.tw)
 	s.paramLearner.Run(ct, s.ds.IntMaps())
+	log.Printf("--------------------------------------------------\n")
+	log.Printf("LL: %.6f\n", ct.Score())
+	log.Printf("LinkedMI: %.6f\n", ComputeMIScore(ct, s.mutInfo))
 	return ct
+}
+
+// SetDataset sets dataset
+func (s *SampleSearch) SetDataset(ds *data.Dataset) {
+	s.common.SetDataset(ds)
+	s.mutInfo = scr.ComputeMutInfDF(ds.DataFrame())
 }
 
 // ComputeMIScore computes linked mutual information score

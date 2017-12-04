@@ -63,7 +63,7 @@ func runCTLearner() {
 	log.Println("Reading dataset file")
 	dataSet := data.NewDataset(dataFile)
 
-	log.Println("Initializong learning algorithm")
+	log.Println("Initializing learning algorithm")
 	alg := learner.Create(learnerAlg)
 	alg.SetDataset(dataSet)
 	alg.SetFileParameters(props)

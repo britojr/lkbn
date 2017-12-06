@@ -210,15 +210,13 @@ func (c *CTree) VarsNeighbors() map[*vars.Var]vars.VarList {
 		vs := nd.Variables()
 		for i := 0; i < len(vs); i++ {
 			for j := i + 1; j < len(vs); j++ {
-				if _, ok := m[vs[i]]; ok {
-					v := m[vs[i]]
-					m[vs[i]] = v.Add(vs[j])
+				if mv, ok := m[vs[i]]; ok {
+					m[vs[i]] = mv.Add(vs[j])
 				} else {
 					m[vs[i]] = []*vars.Var{vs[j]}
 				}
-				if _, ok := m[vs[j]]; ok {
-					v := m[vs[j]]
-					m[vs[j]] = v.Add(vs[i])
+				if mv, ok := m[vs[j]]; ok {
+					m[vs[j]] = mv.Add(vs[i])
 				} else {
 					m[vs[j]] = []*vars.Var{vs[i]}
 				}

@@ -19,6 +19,7 @@ const (
 	ParmReuse     = "em_use_parms"  // use parms of the given model as starting point
 	ParmInitIters = "em_init_iters" // number of initial iterations
 	ParmRestarts  = "em_restarts"   // number of starting points
+	ParmThreads   = "em_threads"    // number of threads for parallelization
 )
 
 // default properties
@@ -43,6 +44,7 @@ type emAlg struct {
 	maxIters     int     // max number of em iterations
 	numRestarts  int     // number of EM starting points
 	numInitIters int     // number of initial iterations
+	numThreads   int     // number of threads to execute runStep
 
 	nIters int // number of iterations of current alg
 }
@@ -75,6 +77,9 @@ func (e *emAlg) SetProperties(props map[string]string) {
 	if restarts, ok := props[ParmRestarts]; ok {
 		e.numRestarts = conv.Atoi(restarts)
 	}
+	if threads, ok := props[ParmThreads]; ok {
+		e.numThreads = conv.Atoi(threads)
+	}
 	// validate properties
 	if e.threshold <= 0 {
 		log.Panicf("emlearner: convergence threshold (%v) must be > 0", e.threshold)
@@ -88,6 +93,9 @@ func (e *emAlg) SetProperties(props map[string]string) {
 	if e.numInitIters <= 0 {
 		log.Panicf("emlearner: num initial iterations (%v) must be > 0", e.numInitIters)
 	}
+	if e.numThreads < 0 {
+		log.Panicf("emlearner: num threads (%v) cannot be negative", e.numThreads)
+	}
 }
 
 func (e *emAlg) PrintProperties() {
@@ -97,6 +105,7 @@ func (e *emAlg) PrintProperties() {
 	log.Printf("%v: %v\n", ParmReuse, e.reuse)
 	log.Printf("%v: %v\n", ParmInitIters, e.numInitIters)
 	log.Printf("%v: %v\n", ParmRestarts, e.numRestarts)
+	log.Printf("%v: %v\n", ParmThreads, e.numThreads)
 }
 
 // start defines a starting point for model's parameters
@@ -183,10 +192,24 @@ func (e *emAlg) Run(m *model.CTree, evset []map[int]int) (*model.CTree, float64,
 // runStep runs expectation and maximization steps
 // returning the loglikelihood of the model with new parameters
 func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
+	if e.numThreads <= 1 {
+		return e.runStepSequential(infalg, evset)
+	}
+	return e.runStepParallel(infalg, evset)
+}
+
+func (e *emAlg) runStepSequential(infalg inference.InfAlg, evset []map[int]int) float64 {
+	// copy of parameters to hold the sufficient statistics
+	count, ll := expectStep(infalg, evset)
+	maxStep(count)
+	return ll
+}
+
+// expecttaion step
+func expectStep(infalg inference.InfAlg, evset []map[int]int) (map[*model.CTNode]*factor.Factor, float64) {
 	// copy of parameters to hold the sufficient statistics
 	count := make(map[*model.CTNode]*factor.Factor)
 	var ll float64
-	// expecttation step
 	for _, evid := range evset {
 		evLkhood := infalg.Run(evid)
 		if evLkhood == 0 {
@@ -204,8 +227,11 @@ func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
 			}
 		}
 	}
+	return count, ll
+}
 
-	// maximization step
+// maximization step
+func maxStep(count map[*model.CTNode]*factor.Factor) {
 	for nd, p := range count {
 		if pa := nd.Parent(); pa != nil {
 			p.Normalize(nd.Potential().Variables().Diff(pa.Potential().Variables())...)
@@ -215,5 +241,42 @@ func (e *emAlg) runStep(infalg inference.InfAlg, evset []map[int]int) float64 {
 		// updates parameters
 		nd.SetPotential(p)
 	}
+}
+
+func (e *emAlg) runStepParallel(infalg inference.InfAlg, evset []map[int]int) float64 {
+	m := infalg.CTree()
+	countCh := make(chan map[*model.CTNode]*factor.Factor, e.numThreads)
+	llCh := make(chan float64, e.numThreads)
+	size, remain := len(evset)/e.numThreads, len(evset)%e.numThreads
+	ini, end := 0, size
+	nch := 0
+	for ini < len(evset) {
+		if remain > 0 {
+			remain--
+			end++
+		}
+		go expectStepCh(inference.NewCTreeCalibration(m), evset[ini:end], countCh, llCh)
+		nch++
+		ini, end = end, end+size
+	}
+
+	ll := <-llCh
+	count := <-countCh
+	for i := 1; i < nch; i++ {
+		ll += <-llCh
+		for nd, p := range <-countCh {
+			count[nd].Plus(p)
+		}
+	}
+	maxStep(count)
 	return ll
+}
+
+func expectStepCh(
+	infalg inference.InfAlg, evset []map[int]int,
+	countCh chan<- map[*model.CTNode]*factor.Factor, llCh chan<- float64,
+) {
+	count, ll := expectStep(infalg, evset)
+	countCh <- count
+	llCh <- ll
 }

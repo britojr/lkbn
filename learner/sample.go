@@ -13,6 +13,8 @@ import (
 type SampleSearch struct {
 	*common              // common variables and methods
 	mutInfo *scr.MutInfo // pre-computed mutual information matrix
+	// TODO: remove
+	iters int
 }
 
 // NewCTSampleSearch creates a instance of the sample stragegy
@@ -25,6 +27,8 @@ func (s *SampleSearch) Search() Solution {
 	ct := model.SampleUniform(s.vs, s.tw)
 	s.paramLearner.Run(ct, s.ds.IntMaps())
 	log.Printf("--------------------------------------------------\n")
+	s.iters++
+	log.Printf("It: %d\n", s.iters)
 	log.Printf("LL: %.6f\n", ct.Score())
 	log.Printf("LinkedMI: %.6f\n", ComputeMIScore(ct, s.mutInfo))
 	return ct
@@ -55,7 +59,7 @@ func linkMI(v, w *vars.Var, m map[*vars.Var]vars.VarList, mutInfo *scr.MutInfo) 
 	if !v.Latent() && !w.Latent() {
 		return mutInfo.Get(v.ID(), w.ID())
 	}
-	if v.ID() > w.ID() {
+	if !w.Latent() {
 		v, w = w, v
 	}
 	ne := m[w].Diff(m[v])

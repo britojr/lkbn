@@ -11,6 +11,7 @@ import (
 // search algorithms names
 const (
 	AlgCTSampleSearch = "ctsample"
+	AlgCTBridgeSearch = "ctbridge"
 )
 
 // file parameters fields
@@ -41,6 +42,7 @@ type Solution interface {
 func Create(learnerAlg string) (lr Learner) {
 	creators := map[string]func() Learner{
 		AlgCTSampleSearch: NewCTSampleSearch,
+		AlgCTBridgeSearch: NewCTBridgeSearch,
 	}
 	if create, ok := creators[learnerAlg]; ok {
 		lr = create()

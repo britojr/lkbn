@@ -276,6 +276,11 @@ type CTNode struct {
 	pot      *factor.Factor
 }
 
+// NewCTNode creates new empty CTNode
+func NewCTNode() *CTNode {
+	return new(CTNode)
+}
+
 // Variables return node variables
 func (cn *CTNode) Variables() vars.VarList {
 	return cn.pot.Variables()
@@ -299,4 +304,10 @@ func (cn *CTNode) Children() []*CTNode {
 // Parent return node parent
 func (cn *CTNode) Parent() *CTNode {
 	return cn.parent
+}
+
+// AddChildren add children and update parent
+func (cn *CTNode) AddChildren(ch *CTNode) {
+	cn.children = append(cn.children, ch)
+	ch.parent = cn
 }

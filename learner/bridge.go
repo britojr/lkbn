@@ -30,11 +30,44 @@ func (s *BridgeSearch) Search() Solution {
 	for i, g := range gs {
 		fmt.Printf("%v: %v\n", i, g)
 	}
+	fmt.Println("Computing mutual information per groups")
 	gmi := groupMI(gs, s.mutInfo)
 	for i := range gmi {
 		fmt.Printf("%v\n", gmi[i])
 	}
 
+	fmt.Println("Finding clusters...")
+	gids := make([]int, len(gs))
+	for i := range gs {
+		gids[i] = i
+	}
+	cls := make([][]int, 0)
+	for len(gids) > 0 {
+		cluster := highestGroupPair(gids, gmi)
+		intsRemove(&gids, cluster[0])
+		intsRemove(&gids, cluster[1])
+		for {
+			if len(gids) == 0 {
+				break
+			}
+			x, _ := highestGroupToCluster(cluster, gids, gmi)
+			cluster = append(cluster, x)
+			intsRemove(&gids, x)
+			// TODO: add pseudo-lcm and pseudo-ltm2l functions here
+			if len(cluster) > 3 {
+				break
+			}
+		}
+		cls = append(cls, cluster)
+		if len(gids) == 1 {
+			cls = append(cls, []int{gids[0]})
+			intsRemove(&gids, gids[0])
+		}
+	}
+
+	for i := range cls {
+		fmt.Printf("%v: %v\n", i, cls[i])
+	}
 	return ct
 }
 
@@ -113,4 +146,43 @@ func groupMI(gs []vars.VarList, mutInfo *scr.MutInfo) [][]float64 {
 		}
 	}
 	return mat
+}
+
+func highestGroupPair(gids []int, gmi [][]float64) []int {
+	maxMI := 0.0
+	var x, y int
+	for i, v := range gids {
+		for _, w := range gids[i+1:] {
+			mi := gmi[v][w]
+			if mi > maxMI {
+				maxMI = mi
+				x, y = v, w
+			}
+		}
+	}
+	return []int{x, y}
+}
+
+func highestGroupToCluster(vs, ws []int, gmi [][]float64) (int, float64) {
+	maxMI := 0.0
+	var x int
+	for _, v := range vs {
+		for _, w := range ws {
+			mi := gmi[v][w]
+			if mi > maxMI {
+				maxMI = mi
+				x = w
+			}
+		}
+	}
+	return x, maxMI
+}
+
+func intsRemove(xs *[]int, y int) {
+	for j, x := range *xs {
+		if x == y {
+			(*xs) = append((*xs)[:j], (*xs)[j+1:]...)
+			break
+		}
+	}
 }

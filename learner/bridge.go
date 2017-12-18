@@ -30,6 +30,10 @@ func (s *BridgeSearch) Search() Solution {
 	for i, g := range gs {
 		fmt.Printf("%v: %v\n", i, g)
 	}
+	gmi := groupMI(gs, s.mutInfo)
+	for i := range gmi {
+		fmt.Printf("%v\n", gmi[i])
+	}
 
 	return ct
 }
@@ -50,7 +54,7 @@ func splitGroups(vs vars.VarList, k int, mutInfo *scr.MutInfo) (gs []vars.VarLis
 			if len(remain) == 0 {
 				break
 			}
-			x := highestToGroup(g, remain, mutInfo)
+			x, _ := highestToGroup(g, remain, mutInfo)
 			g.Add(x)
 			remain.Remove(x.ID())
 		}
@@ -79,8 +83,8 @@ func highestPair(vs vars.VarList, mutInfo *scr.MutInfo) vars.VarList {
 	return []*vars.Var{x, y}
 }
 
-// finds the highest scoring vair with relation to another group of variables
-func highestToGroup(vs, ws vars.VarList, mutInfo *scr.MutInfo) *vars.Var {
+// finds the highest mi scoring var with relation to another group of variables
+func highestToGroup(vs, ws vars.VarList, mutInfo *scr.MutInfo) (*vars.Var, float64) {
 	maxMI := 0.0
 	var x *vars.Var
 	for _, v := range vs {
@@ -92,5 +96,21 @@ func highestToGroup(vs, ws vars.VarList, mutInfo *scr.MutInfo) *vars.Var {
 			}
 		}
 	}
-	return x
+	return x, maxMI
+}
+
+// computes mi between groups of variables
+func groupMI(gs []vars.VarList, mutInfo *scr.MutInfo) [][]float64 {
+	mat := make([][]float64, len(gs))
+	for i := range mat {
+		mat[i] = make([]float64, len(gs))
+	}
+
+	for i := 0; i < len(gs); i++ {
+		for j := 0; j < i; j++ {
+			_, maxMI := highestToGroup(gs[i], gs[j], mutInfo)
+			mat[i][j], mat[j][i] = maxMI, maxMI
+		}
+	}
+	return mat
 }

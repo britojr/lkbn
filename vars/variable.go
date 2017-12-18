@@ -41,6 +41,11 @@ func (v Var) NState() int {
 	return v.nstate
 }
 
+// SetNState set variable num states
+func (v *Var) SetNState(nstate int) {
+	v.nstate = nstate
+}
+
 // Name return variable's name
 func (v Var) Name() string {
 	return v.name

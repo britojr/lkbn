@@ -5,6 +5,8 @@ import (
 
 	"github.com/britojr/btbn/scr"
 	"github.com/britojr/lkbn/data"
+	"github.com/britojr/lkbn/emlearner"
+	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
 )
@@ -185,4 +187,85 @@ func intsRemove(xs *[]int, y int) {
 			break
 		}
 	}
+}
+
+func computeBIC(ct *model.CTree) float64 {
+	// TODO: check this bic computation
+	numparms := 0
+	for _, nd := range ct.Nodes() {
+		numparms += len(nd.Potential().Values())
+	}
+	return ct.Score() - float64(numparms)
+}
+
+func learnLKM1L(gs []vars.VarList, ds *data.Dataset, paramLearner emlearner.EMLearner) *model.CTree {
+	// create new latent variable
+	nstate := 2
+	lv := vars.New(len(ds.Variables()), nstate, "", true)
+	// mount structure
+	f := factor.New(gs[0].Union([]*vars.Var{lv})...)
+	ct := model.NewCTree()
+	root := model.NewCTNode()
+	root.SetPotential(f)
+	ct.AddNode(root)
+	for _, g := range gs[1:] {
+		f := factor.New(g.Union([]*vars.Var{lv})...)
+		nd := model.NewCTNode()
+		nd.SetPotential(f)
+		root.AddChildren(nd)
+		ct.AddNode(nd)
+	}
+
+	// increase latent cardinality and learn parameters until bic stops increasing
+	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
+	bic := computeBIC(ct)
+	for {
+		nstate++
+		lv.SetNState(nstate)
+		ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
+		newbic := computeBIC(ct)
+		if newbic <= bic {
+			break
+		}
+		bic = newbic
+	}
+	return ct
+}
+
+func learnLKM2L(gs []vars.VarList, ds *data.Dataset, paramLearner emlearner.EMLearner) (*model.CTree, int) {
+	// TODO: implement correct 2L
+	// create new latent variable
+	nstate := 2
+	lvs := []*vars.Var{
+		vars.New(len(ds.Variables()), nstate, "", true),
+		vars.New(len(ds.Variables())+1, nstate, "", true),
+	}
+	// mount structure
+	f := factor.New(gs[0].Union([]*vars.Var{lvs[0]})...)
+	ct := model.NewCTree()
+	root := model.NewCTNode()
+	root.SetPotential(f)
+	ct.AddNode(root)
+	for _, g := range gs[1:] {
+		f := factor.New(g.Union([]*vars.Var{lvs[0]})...)
+		nd := model.NewCTNode()
+		nd.SetPotential(f)
+		root.AddChildren(nd)
+		ct.AddNode(nd)
+	}
+
+	// increase latent cardinality and learn parameters until bic stops increasing
+	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
+	bic := computeBIC(ct)
+	for {
+		nstate++
+		lvs[0].SetNState(nstate)
+		ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
+		newbic := computeBIC(ct)
+		if newbic <= bic {
+			break
+		}
+		bic = newbic
+	}
+	return ct, len(lvs)
 }

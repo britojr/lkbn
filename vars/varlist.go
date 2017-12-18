@@ -108,6 +108,17 @@ func (vl *VarList) Add(x *Var) VarList {
 	return *vl
 }
 
+// Remove remove variable x (by ID) from vl
+func (vl *VarList) Remove(xid int) VarList {
+	for j, v := range *vl {
+		if v.ID() == xid {
+			(*vl) = append((*vl)[:j], (*vl)[j+1:]...)
+			return *vl
+		}
+	}
+	return *vl
+}
+
 // IntersecID returns new list with elements present in vl and in ids
 func (vl VarList) IntersecID(ids ...int) (w VarList) {
 	sort.Ints(ids)

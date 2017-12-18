@@ -106,6 +106,28 @@ func TestAdd(t *testing.T) {
 	}
 }
 
+func TestRemove(t *testing.T) {
+	cases := []struct {
+		vs, ws, res VarList
+	}{
+		{NewList([]int{0, 1, 2}, nil), nil, NewList([]int{0, 1, 2}, nil)},
+		{NewList([]int{1, 2, 4}, nil), NewList([]int{4}, nil), NewList([]int{1, 2}, nil)},
+		{NewList([]int{1, 2, 4}, nil), NewList([]int{5}, nil), NewList([]int{1, 2, 4}, nil)},
+		{NewList([]int{0, 1, 2, 4}, nil), NewList([]int{4, 0}, nil), NewList([]int{1, 2}, nil)},
+		{NewList([]int{0, 1, 2, 4, 5, 7, 12}, nil), NewList([]int{4, 0, 5, 12, 2, 7, 1}, nil), NewList(nil, nil)},
+		{NewList([]int{0, 1, 2, 4}, nil), NewList([]int{4, 2, 1, 0}, nil), nil},
+	}
+	for _, tt := range cases {
+		got := tt.vs
+		for _, v := range tt.ws {
+			got.Remove(v.ID())
+		}
+		if !tt.res.Equal(got) {
+			t.Errorf("wrong remove %v != %v", tt.res, got)
+		}
+	}
+}
+
 func TestDiff(t *testing.T) {
 	cases := []struct {
 		a, b, want []int

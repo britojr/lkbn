@@ -115,6 +115,7 @@ func TestRemove(t *testing.T) {
 		{NewList([]int{1, 2, 4}, nil), NewList([]int{5}, nil), NewList([]int{1, 2, 4}, nil)},
 		{NewList([]int{0, 1, 2, 4}, nil), NewList([]int{4, 0}, nil), NewList([]int{1, 2}, nil)},
 		{NewList([]int{0, 1, 2, 4, 5, 7, 12}, nil), NewList([]int{4, 0, 5, 12, 2, 7, 1}, nil), NewList(nil, nil)},
+		{NewList([]int{0, 1, 2, 4, 5, 7, 12}, nil), NewList([]int{0, 3}, nil), NewList([]int{1, 2, 4, 5, 7, 12}, nil)},
 		{NewList([]int{0, 1, 2, 4}, nil), NewList([]int{4, 2, 1, 0}, nil), nil},
 	}
 	for _, tt := range cases {

@@ -113,7 +113,10 @@ func (vl *VarList) Remove(xid int) VarList {
 	for j, v := range *vl {
 		if v.ID() == xid {
 			(*vl) = append((*vl)[:j], (*vl)[j+1:]...)
-			return *vl
+			break
+		}
+		if v.ID() > xid {
+			break
 		}
 	}
 	return *vl

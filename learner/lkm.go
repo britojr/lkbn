@@ -41,22 +41,31 @@ func learnLKM1L(gs []vars.VarList, ds *data.Dataset, paramLearner emlearner.EMLe
 	// increase latent cardinality and learn parameters until bic stops increasing
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
 	bic := computeBIC(ct)
+	ct.SetBIC(bic)
 	for {
 		nstate++
-		lv.SetNState(nstate)
-		for _, nd := range ct.Nodes() {
-			// after updating the state it is necessary to reshape all the factors
-			nd.Potential().ResetValues().RandomDistribute()
-		}
-		ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
-		newbic := computeBIC(ct)
-		if newbic <= bic {
+		lv2 := vars.New(len(ds.Variables()), nstate, "", true)
+		newct := copyReplace(ct, lv, lv2)
+		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
+		newbic := computeBIC(newct)
+		newct.SetBIC(newbic)
+		if newct.BIC() <= ct.BIC() {
 			break
 		}
-		bic = newbic
+		ct = newct
 	}
-	ct.SetBIC(bic)
 	return ct
+}
+
+// creates a copy of the given ctree replacing v1 by v2
+func copyReplace(ct *model.CTree, v1, v2 *vars.Var) *model.CTree {
+	ot := ct.Copy()
+	for _, nd := range ot.Nodes() {
+		vs := nd.Variables()
+		vs.Remove(v1.ID())
+		nd.SetPotential(factor.New(vs.Add(v2)...))
+	}
+	return ot
 }
 
 func learnLKM2L(gs []vars.VarList, ds *data.Dataset, paramLearner emlearner.EMLearner) (*model.CTree, int) {

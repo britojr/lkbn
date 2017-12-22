@@ -32,6 +32,7 @@ func NewDataset(fname string) (d *Dataset) {
 
 // IntMaps return a slice of intmaps of the dataset
 func (d *Dataset) IntMaps() []map[int]int {
+	// TODO: cache this
 	r, c := d.df.Dims()
 	var err error
 	ms := make([]map[int]int, r)

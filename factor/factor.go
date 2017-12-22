@@ -88,6 +88,22 @@ func (f *Factor) RandomDistribute(xs ...*vars.Var) *Factor {
 	return f
 }
 
+// UniformDistribute sets values with a uniform distribution
+func (f *Factor) UniformDistribute(xs ...*vars.Var) *Factor {
+	tot := float64(len(f.values))
+	for i := range f.values {
+		f.values[i] = 1 / tot
+	}
+	f.Normalize(xs...)
+	return f
+}
+
+// ResetValues realocates values slice
+func (f *Factor) ResetValues() *Factor {
+	f.values = make([]float64, f.vs.NStates())
+	return f
+}
+
 // Plus adds g to f
 func (f *Factor) Plus(g *Factor) *Factor {
 	return f.operationIn(g, opAdd)

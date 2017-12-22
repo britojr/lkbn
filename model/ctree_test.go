@@ -88,3 +88,21 @@ func TestCopy(t *testing.T) {
 		// }
 	}
 }
+
+func TestVariables(t *testing.T) {
+	cases := []struct {
+		vs vars.VarList
+		k  int
+	}{{
+		vars.NewList([]int{0, 1, 2, 3, 4}, []int{2, 2, 2, 2, 2}), 2,
+	}, {
+		vars.NewList([]int{0, 1, 2, 3, 4, 5}, []int{2, 2, 2, 2, 2, 2}), 3,
+	}}
+	for _, tt := range cases {
+		ct := SampleUniform(tt.vs, tt.k)
+		got := ct.Variables()
+		if !tt.vs.Equal(got) {
+			t.Errorf("wrong variables %v != %v", tt.vs, got)
+		}
+	}
+}

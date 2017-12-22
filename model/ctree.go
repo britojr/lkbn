@@ -230,6 +230,15 @@ func (c *CTree) VarsNeighbors() map[*vars.Var]vars.VarList {
 	return m
 }
 
+// Variables returns a list of all the variables
+func (c *CTree) Variables() (vs vars.VarList) {
+	m := c.VarsNeighbors()
+	for v := range m {
+		vs.Add(v)
+	}
+	return vs
+}
+
 // AddNode add node to tree
 func (c *CTree) AddNode(nd *CTNode) {
 	c.nodes = append(c.nodes, nd)

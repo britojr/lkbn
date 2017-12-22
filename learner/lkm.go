@@ -18,7 +18,7 @@ func computeBIC(ct *model.CTree) float64 {
 }
 
 // creates a new tree structure with lv as parent of every clique
-func createInitialStruct(gs []vars.VarList, lv *vars.Var) *model.CTree {
+func createLKM1LStruct(gs []vars.VarList, lv *vars.Var) *model.CTree {
 	ct := model.NewCTree()
 	root := model.NewCTNode()
 	root.SetPotential(factor.New(gs[0].Union([]*vars.Var{lv})...))
@@ -36,7 +36,7 @@ func learnLKM1L(gs []vars.VarList, ds *data.Dataset, paramLearner emlearner.EMLe
 	// create new latent variable
 	nstate := 2
 	lv := vars.New(len(ds.Variables()), nstate, "", true)
-	ct := createInitialStruct(gs, lv)
+	ct := createLKM1LStruct(gs, lv)
 
 	// increase latent cardinality and learn parameters until bic stops increasing
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
@@ -45,6 +45,7 @@ func learnLKM1L(gs []vars.VarList, ds *data.Dataset, paramLearner emlearner.EMLe
 		nstate++
 		lv.SetNState(nstate)
 		for _, nd := range ct.Nodes() {
+			// after updating the state it is necessary to reshape all the factors
 			nd.Potential().ResetValues().RandomDistribute()
 		}
 		ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
@@ -54,6 +55,7 @@ func learnLKM1L(gs []vars.VarList, ds *data.Dataset, paramLearner emlearner.EMLe
 		}
 		bic = newbic
 	}
+	ct.SetBIC(bic)
 	return ct
 }
 

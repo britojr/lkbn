@@ -205,6 +205,10 @@ func (c *CTree) Equal(other *CTree) bool {
 
 // VarsNeighbors returns a mapping from variables to their neighbors
 func (c *CTree) VarsNeighbors() map[*vars.Var]vars.VarList {
+	// TODO: rethink this method (VarsToNeighbors)
+	// maybe cache the map (apply the same to nodes slice)
+	// set to null if a change in the structure occurs
+	// and compute when asked (then save in cache)
 	m := make(map[*vars.Var]vars.VarList)
 	for _, nd := range c.nodes {
 		vs := nd.Variables()

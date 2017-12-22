@@ -16,9 +16,9 @@ import (
 // a CTree is a way to group the potentials of the model according to its cliques
 // the potentials assossiated with each clique are pointers to the same factors present in the model
 type CTree struct {
-	nodes []*CTNode
-	root  *CTNode
-	score float64
+	nodes      []*CTNode
+	root       *CTNode
+	score, bic float64
 	// family map[*vars.Var]*CTNode
 }
 
@@ -242,6 +242,16 @@ func (c *CTree) Score() float64 {
 // SetScore set ctree score
 func (c *CTree) SetScore(score float64) {
 	c.score = score
+}
+
+// BIC return ctree bic score
+func (c *CTree) BIC() float64 {
+	return c.bic
+}
+
+// SetBIC set ctree bic score
+func (c *CTree) SetBIC(bic float64) {
+	c.bic = bic
 }
 
 // Len return number of nodes in the tree

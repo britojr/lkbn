@@ -41,19 +41,19 @@ func learnLKM1L(gs []vars.VarList, ds *data.Dataset, paramLearner emlearner.EMLe
 	// increase latent cardinality and learn parameters until bic stops increasing
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
 	bic := computeBIC(ct)
-	ct.SetBIC(bic)
 	for {
 		nstate++
 		lv2 := vars.New(len(ds.Variables()), nstate, "", true)
-		newct := copyReplace(ct, lv, lv2)
+		newct := createLKM1LStruct(gs, lv2)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
 		newbic := computeBIC(newct)
-		newct.SetBIC(newbic)
-		if newct.BIC() <= ct.BIC() {
+		if newbic <= bic {
 			break
 		}
 		ct = newct
+		bic = newbic
 	}
+	ct.SetBIC(bic)
 	return ct
 }
 

@@ -232,6 +232,7 @@ func (c *CTree) VarsNeighbors() map[*vars.Var]vars.VarList {
 
 // Variables returns a list of all the variables
 func (c *CTree) Variables() (vs vars.VarList) {
+	// TODO: improve this with bfs or caching the varlist
 	m := c.VarsNeighbors()
 	for v := range m {
 		vs.Add(v)

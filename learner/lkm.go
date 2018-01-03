@@ -62,7 +62,8 @@ func learnLKM1L(gs []vars.VarList, ds *data.Dataset, paramLearner emlearner.EMLe
 
 // creates a LKM model with two latent variables
 // as starting point, the first latent variable is parent of group 1 and the second of group 2
-func learnLKM2L(gs1, gs2 []vars.VarList, ds *data.Dataset, paramLearner emlearner.EMLearner) *model.CTree {
+func learnLKM2L(gs1, gs2 []vars.VarList, ds *data.Dataset,
+	paramLearner emlearner.EMLearner) (*model.CTree, []vars.VarList, []vars.VarList) {
 	// create new latent variables and mount structure
 	nstate := 2
 	lvs := []*vars.Var{
@@ -112,7 +113,7 @@ func learnLKM2L(gs1, gs2 []vars.VarList, ds *data.Dataset, paramLearner emlearne
 		}
 	}
 	ct.SetBIC(bic)
-	return ct
+	return ct, gs1, gs2
 }
 
 func createLKM2LStruct(gs1, gs2 []vars.VarList, reloc int, lvs []*vars.Var) *model.CTree {

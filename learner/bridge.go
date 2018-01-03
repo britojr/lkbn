@@ -5,6 +5,7 @@ import (
 
 	"github.com/britojr/btbn/scr"
 	"github.com/britojr/lkbn/data"
+	"github.com/britojr/lkbn/emlearner"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
 )
@@ -28,59 +29,52 @@ func (s *BridgeSearch) SetDataset(ds *data.Dataset) {
 
 // Search searches for a network structure
 func (s *BridgeSearch) Search() Solution {
-	// TODO: use a copy of paramLearner with 'reuse' parm set to false
-	ct := model.SampleUniform(s.vs, s.tw)
-	// s.paramLearner.Run(ct, s.ds.IntMaps())
 
 	fmt.Println("Grouping variables per mutual information")
-	gs := splitVarGroups(s.ds.Variables(), s.tw, s.mutInfo)
+	gs := groupVariables(s.ds.Variables(), s.tw, s.mutInfo)
 	for i, g := range gs {
 		fmt.Printf("%v: %v\n", i, g)
 	}
 	fmt.Println("Computing mutual information per groups")
-	gmi := computeGroupedMI(gs, s.mutInfo)
-	for i := range gmi {
-		fmt.Printf("%v\n", gmi[i])
+	gpmi := computeGroupedMI(gs, s.mutInfo)
+	for i := range gpmi {
+		fmt.Printf("%v: %v\n", i, gpmi[i])
 	}
 	fmt.Println("Grouping the groups of variables")
-	cls := clusterGroups(gs, gmi)
+	// TODO: use a copy of paramLearner with 'reuse' parm set to false
+	cls := clusterGroups(gs, gpmi, s.ds, s.paramLearner)
 	for i := range cls {
 		fmt.Printf("%v: %v\n", i, cls[i])
 	}
 
 	// TODO: remove
 	// learnLKM1L(, ds, paramLearner)
+	ct := model.SampleUniform(s.vs, s.tw)
+	// s.paramLearner.Run(ct, s.ds.IntMaps())
 	return ct
 }
 
-type group struct {
-	vars.VarList
-	id int
-}
-
 // splits varlist in groups of size k, grouping variables by highest MI
-func splitVarGroups(vs vars.VarList, k int, mutInfo *scr.MutInfo) (gs []group) {
+func groupVariables(vs vars.VarList, k int, mutInfo *scr.MutInfo) (gs []vars.VarList) {
 	remain := vs.Copy()
-	id := 0
 	for len(remain) != 0 {
 		g := highestPair(remain, mutInfo)
 		for _, v := range g {
 			remain.Remove(v.ID())
 		}
-		for i := 2; i < k; i++ {
+		for i := 0; i < k-2; i++ {
 			if len(remain) == 0 {
 				break
 			}
 			x, _ := highestToGroup(g, remain, mutInfo)
-			g.Add(x)
-			remain.Remove(x.ID())
+			g.Add(x[1])
+			remain.Remove(x[1].ID())
 		}
 		if len(remain) == 1 {
 			g.Add(remain[0])
 			remain.Remove(remain[0].ID())
 		}
-		gs = append(gs, group{g, id})
-		id++
+		gs = append(gs, g)
 	}
 	return
 }
@@ -105,41 +99,47 @@ func highestPair(vs vars.VarList, mutInfo *scr.MutInfo) vars.VarList {
 }
 
 // finds the highest mi scoring var with relation to another group of variables
-func highestToGroup(vs, ws vars.VarList, mutInfo *scr.MutInfo) (*vars.Var, float64) {
+func highestToGroup(vs, ws vars.VarList, mutInfo *scr.MutInfo) (vars.VarList, float64) {
 	maxMI := 0.0
-	var x *vars.Var
+	xs := make([]*vars.Var, 2)
 	for _, v := range vs {
 		for _, w := range ws {
 			mi := mutInfo.Get(v.ID(), w.ID())
 			if mi > maxMI {
 				maxMI = mi
-				x = w
+				xs[0] = v
+				xs[1] = w
 			}
 		}
 	}
-	return x, maxMI
+	return xs, maxMI
 }
 
 // computes mutual information between groups of variables
-func computeGroupedMI(gs []group, mutInfo *scr.MutInfo) [][]float64 {
-	mat := make([][]float64, len(gs))
-	for i := range mat {
-		mat[i] = make([]float64, len(gs))
-	}
-	for i := 0; i < len(gs); i++ {
+func computeGroupedMI(gs []vars.VarList, mutInfo *scr.MutInfo) map[string]map[string]float64 {
+	gpMI := make(map[string]map[string]float64)
+	for i := range gs {
+		gpki := groupKey(gs[i])
+		gpMI[gpki] = make(map[string]float64)
 		for j := 0; j < i; j++ {
-			_, maxMI := highestToGroup(gs[i].VarList, gs[j].VarList, mutInfo)
-			mat[i][j], mat[j][i] = maxMI, maxMI
+			gpkj := groupKey(gs[j])
+			_, maxMI := highestToGroup(gs[i], gs[j], mutInfo)
+			gpMI[gpki][gpkj], gpMI[gpkj][gpki] = maxMI, maxMI
 		}
 	}
-	return mat
+	return gpMI
 }
 
-func clusterGroups(gs []group, gmi [][]float64) [][]group {
+func groupKey(gp vars.VarList) string {
+	return fmt.Sprint(gp)
+}
+
+func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
+	ds *data.Dataset, paramLearner emlearner.EMLearner) [][]vars.VarList {
 	fmt.Println("Finding clusters...")
-	cls := make([][]group, 0)
+	cls := make([][]vars.VarList, 0)
 	for len(gs) > 0 {
-		cl := highestGroupPair(gs, gmi)
+		cl := highestGroupPair(gs, gpMI)
 		for _, g := range cl {
 			groupRemove(&gs, g)
 		}
@@ -147,16 +147,41 @@ func clusterGroups(gs []group, gmi [][]float64) [][]group {
 			if len(gs) == 0 {
 				break
 			}
-			g, _ := highestGroupToCluster(cl, gs, gmi)
-			cl = append(cl, g)
-			groupRemove(&gs, g)
-			// TODO: add pseudo-lcm and pseudo-ltm2l functions here
-			if len(cl) > 3 {
+			cl2 := highestGroupToCluster(cl, gs, gpMI)
+			groupRemove(&gs, cl2[1])
+			cl1 := append([]vars.VarList(nil), cl...)
+			groupRemove(&cl1, cl2[0])
+			cl = append(cl, cl2[1])
+			ct1L := learnLKM1L(cl, ds, paramLearner)
+			ct2L, gs1, gs2 := learnLKM2L(cl1, cl2, ds, paramLearner)
+			if ct2L.BIC()-ct1L.BIC() > bicThreshold {
+				// if fails the test, should keep the group that contains the highest pair
+				if groupContains(gs1, cl[0]) {
+					if groupContains(gs1, cl[1]) {
+						cl = gs1
+						gs = append(gs, gs2...)
+						break
+					}
+				} else {
+					if groupContains(gs2, cl[1]) {
+						cl = gs2
+						gs = append(gs, gs1...)
+						break
+					}
+				}
+				if len(gs1) > len(gs2) {
+					cl = gs1
+					gs = append(gs, gs2...)
+				} else {
+					cl = gs2
+					gs = append(gs, gs1...)
+				}
 				break
 			}
 		}
 		cls = append(cls, cl)
 		if len(gs) == 1 {
+			// TODO: think what to do when just one group is left alone
 			cls = append(cls, gs)
 			gs = nil
 		}
@@ -164,41 +189,56 @@ func clusterGroups(gs []group, gmi [][]float64) [][]group {
 	return cls
 }
 
-func highestGroupPair(gs []group, gmi [][]float64) []group {
+// finds the highest scoring pair of groups
+func highestGroupPair(gs []vars.VarList, gpMI map[string]map[string]float64) []vars.VarList {
 	maxMI := 0.0
-	var x, y group
+	xs := make([]vars.VarList, 2)
 	for i, v := range gs {
-		for _, w := range gs[i+1:] {
-			mi := gmi[v.id][w.id]
+		gpki := groupKey(v)
+		for _, w := range gs[:i] {
+			gpkj := groupKey(w)
+			mi := gpMI[gpki][gpkj]
 			if mi > maxMI {
 				maxMI = mi
-				x, y = v, w
+				xs[0], xs[1] = v, w
 			}
 		}
 	}
-	return []group{x, y}
+	return xs
 }
 
-func highestGroupToCluster(vs, ws []group, gmi [][]float64) (group, float64) {
+// finds the highest mi scoring pair of groups between two distinct group lists
+func highestGroupToCluster(vs, ws []vars.VarList, gpMI map[string]map[string]float64) []vars.VarList {
 	maxMI := 0.0
-	var x group
+	xs := make([]vars.VarList, 2)
 	for _, v := range vs {
+		gpki := groupKey(v)
 		for _, w := range ws {
-			mi := gmi[v.id][w.id]
+			gpkj := groupKey(w)
+			mi := gpMI[gpki][gpkj]
 			if mi > maxMI {
 				maxMI = mi
-				x = w
+				xs[0], xs[1] = v, w
 			}
 		}
 	}
-	return x, maxMI
+	return xs
 }
 
-func groupRemove(gs *[]group, g group) {
-	for j, h := range *gs {
-		if h.id == g.id {
-			(*gs) = append((*gs)[:j], (*gs)[j+1:]...)
+func groupRemove(gs *[]vars.VarList, g vars.VarList) {
+	for i, v := range *gs {
+		if g.Equal(v) {
+			(*gs) = append((*gs)[:i], (*gs)[i+1:]...)
 			break
 		}
 	}
+}
+
+func groupContains(gs []vars.VarList, g vars.VarList) bool {
+	for _, v := range gs {
+		if g.Equal(v) {
+			return true
+		}
+	}
+	return false
 }

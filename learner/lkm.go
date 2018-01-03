@@ -8,6 +8,8 @@ import (
 	"github.com/britojr/lkbn/vars"
 )
 
+var bicThreshold = 0.1
+
 func computeBIC(ct *model.CTree) float64 {
 	// TODO: replace temporary approximation of BIC by correct equation
 	numparms := 0
@@ -47,11 +49,12 @@ func learnLKM1L(gs []vars.VarList, ds *data.Dataset, paramLearner emlearner.EMLe
 		newct := createLKM1LStruct(gs, lv2)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
 		newbic := computeBIC(newct)
-		if newbic <= bic {
+		if newbic-bic > bicThreshold {
+			ct = newct
+			bic = newbic
+		} else {
 			break
 		}
-		ct = newct
-		bic = newbic
 	}
 	ct.SetBIC(bic)
 	return ct

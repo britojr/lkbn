@@ -60,6 +60,8 @@ type fakeLearner struct {
 	maxcard int
 }
 
+func (f fakeLearner) SetProperties(props map[string]string) {}
+func (f fakeLearner) PrintProperties()                      {}
 func (f fakeLearner) Run(m *model.CTree, evset []map[int]int) (*model.CTree, float64, int) {
 	vs := m.Variables()
 	c := 1
@@ -75,8 +77,6 @@ func (f fakeLearner) Run(m *model.CTree, evset []map[int]int) (*model.CTree, flo
 	m.SetScore(-1000 / float64(c))
 	return m, m.Score(), 1
 }
-func (f fakeLearner) SetProperties(props map[string]string) {}
-func (f fakeLearner) PrintProperties()                      {}
 
 func TestLearnLKM1L(t *testing.T) {
 	content := `A,B,C,D,E,F,G,H,I,J,K

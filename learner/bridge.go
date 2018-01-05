@@ -129,7 +129,9 @@ func computeGroupedMI(gs []vars.VarList, mutInfo *scr.MutInfo) map[string]map[st
 }
 
 func groupKey(gp vars.VarList) string {
-	return fmt.Sprint(gp)
+	k := fmt.Sprint(gp)
+	k = k[1 : len(k)-1]
+	return k
 }
 
 func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
@@ -152,6 +154,16 @@ func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
 			cl = append(cl, cl2[1])
 			ct1L := learnLKM1L(cl, ds, paramLearner)
 			ct2L, gs1, gs2 := learnLKM2L(cl1, cl2, ds, paramLearner)
+			fmt.Println("-----------------------------------")
+			fmt.Printf("b1: %v\tb2: %v\n", ct1L.BIC(), ct2L.BIC())
+			fmt.Printf("cl:\n%v(%v)\n", cl, len(cl))
+			fmt.Printf("cl1:\n%v(%v)\n", cl1, len(cl1))
+			fmt.Printf("cl2:\n%v(%v)\n", cl2, len(cl2))
+			fmt.Printf("ct1L:\n%v\n", ct1L.Nodes())
+			fmt.Println()
+			fmt.Printf("ct2L:\n%v\n", ct2L.Nodes())
+			fmt.Println()
+
 			if ct2L.BIC()-ct1L.BIC() > bicThreshold {
 				// if fails the test, should keep the group that contains the highest pair
 				if groupContains(gs1, cl[0]) {

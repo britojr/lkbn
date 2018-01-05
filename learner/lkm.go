@@ -13,9 +13,9 @@ var bicThreshold = 0.1
 func computeBIC(ct *model.CTree) float64 {
 	// TODO: replace temporary approximation of BIC by correct equation
 	numparms := 0
-	for _, nd := range ct.Nodes() {
-		numparms += len(nd.Potential().Values())
-	}
+	// for _, nd := range ct.Nodes() {
+	// 	numparms += len(nd.Potential().Values())
+	// }
 	return ct.Score() - float64(numparms)
 }
 
@@ -53,6 +53,10 @@ func learnLKM1L(gs []vars.VarList, ds *data.Dataset, paramLearner emlearner.EMLe
 			ct = newct
 			bic = newbic
 		} else {
+			break
+		}
+		// TODO: set some max card limit
+		if nstate >= 5 {
 			break
 		}
 	}

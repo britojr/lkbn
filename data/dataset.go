@@ -14,6 +14,8 @@ import (
 type Dataset struct {
 	vs vars.VarList
 	df dataframe.DataFrame
+
+	intMaps []map[int]int // cached intMaps
 }
 
 // NewDataset return a new dataset type
@@ -32,18 +34,20 @@ func NewDataset(fname string) (d *Dataset) {
 
 // IntMaps return a slice of intmaps of the dataset
 func (d *Dataset) IntMaps() []map[int]int {
-	// TODO: cache this
-	r, c := d.df.Dims()
-	var err error
-	ms := make([]map[int]int, r)
-	for i := 0; i < r; i++ {
-		ms[i] = make(map[int]int)
-		for j := 0; j < c; j++ {
-			ms[i][j], err = d.df.Elem(i, j).Int()
-			errchk.Check(err, "dataset: invalid data")
+	// TODO: check this
+	if len(d.intMaps) == 0 {
+		r, c := d.df.Dims()
+		var err error
+		d.intMaps = make([]map[int]int, r)
+		for i := 0; i < r; i++ {
+			d.intMaps[i] = make(map[int]int)
+			for j := 0; j < c; j++ {
+				d.intMaps[i][j], err = d.df.Elem(i, j).Int()
+				errchk.Check(err, "dataset: invalid data")
+			}
 		}
 	}
-	return ms
+	return d.intMaps
 }
 
 // Variables return dataset variables

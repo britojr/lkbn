@@ -335,3 +335,7 @@ func (cn *CTNode) AddChildren(ch *CTNode) {
 	cn.children = append(cn.children, ch)
 	ch.parent = cn
 }
+
+func (cn *CTNode) String() string {
+	return fmt.Sprint(cn.pot.Variables())
+}

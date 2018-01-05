@@ -48,9 +48,7 @@ func (s *BridgeSearch) Search() Solution {
 	}
 
 	// TODO: remove
-	// learnLKM1L(, ds, paramLearner)
 	ct := model.SampleUniform(s.vs, s.tw)
-	// s.paramLearner.Run(ct, s.ds.IntMaps())
 	return ct
 }
 

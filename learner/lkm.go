@@ -144,15 +144,3 @@ func createLKM2LStruct(gs1, gs2 []vars.VarList, reloc int, lvs []*vars.Var) *mod
 	}
 	return ct
 }
-
-//
-// // creates a copy of the given ctree replacing v1 by v2
-// func copyReplace(ct *model.CTree, v1, v2 *vars.Var) *model.CTree {
-// 	ot := ct.Copy()
-// 	for _, nd := range ot.Nodes() {
-// 		vs := nd.Variables()
-// 		vs.Remove(v1.ID())
-// 		nd.SetPotential(factor.New(vs.Add(v2)...))
-// 	}
-// 	return ot
-// }

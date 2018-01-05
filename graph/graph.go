@@ -6,8 +6,8 @@ type WEdge struct {
 	Weight     float64
 }
 
-// MaxSpanningTree receives a list of weighted edges of a full graph
+// MaxSpanningTree receives a list of weighted edges of a graph
 // and returns the list of weighted edges of a maximum spanning tree
-func MaxSpanningTree(full []WEdge) (mst []WEdge) {
+func MaxSpanningTree(edges []WEdge) (mst []WEdge) {
 	return nil
 }

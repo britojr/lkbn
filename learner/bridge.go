@@ -47,6 +47,19 @@ func (s *BridgeSearch) Search() Solution {
 		fmt.Printf("%v: %v\n", i, cls[i])
 	}
 
+	// creates the latent variables of the model
+	lvs := make([]*vars.Var, len(cls))
+	// creates a subtree for each cluster
+	// TODO: update here:
+	// - the LKM1L needs to have the same structure pattern as 2L, that is, the root clique is fully latent
+	// also, it is necessary to add an input parameter to inform the desired latent variable
+	// - then learn and store all subtrees
+	// - for each subtree, run inference for each data case saving the latent variable post marginal
+	for i, cl := range cls {
+		lvs[i] = vars.New(s.nv+i, 2, "", true)
+		learnLKM1L(cl, s.ds, s.paramLearner)
+	}
+
 	// TODO: remove
 	ct := model.SampleUniform(s.vs, s.tw)
 	return ct

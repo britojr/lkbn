@@ -8,8 +8,10 @@ import (
 
 func TestMaxSpanningTree(t *testing.T) {
 	cases := []struct {
+		nodes       []string
 		edges, want []WEdge
 	}{{
+		nodes: []string{"A", "B", "C", "D", "E", "F", "G"},
 		edges: []WEdge{
 			{"A", "B", 7},
 			{"A", "D", 8},
@@ -24,16 +26,16 @@ func TestMaxSpanningTree(t *testing.T) {
 			{"E", "G", 2},
 		},
 		want: []WEdge{
-			{"A", "B", 7},
-			{"A", "D", 8},
-			{"C", "E", 9},
-			{"D", "F", 10},
 			{"F", "E", 11},
+			{"D", "F", 10},
+			{"C", "E", 9},
+			{"A", "D", 8},
+			{"A", "B", 7},
 			{"F", "G", 3},
 		},
 	}}
 	for _, tt := range cases {
-		got := MaxSpanningTree(tt.edges)
+		got := MaxSpanningTree(tt.nodes, tt.edges)
 		if got == nil {
 			t.Fatalf("returned empty graph for edges:\n%v\n", tt.edges)
 		}
@@ -41,7 +43,7 @@ func TestMaxSpanningTree(t *testing.T) {
 			return got[i].Weight > got[j].Weight
 		})
 		if !reflect.DeepEqual(tt.want, got) {
-			t.Errorf("wrong tree, expected:\n%v\ngot:\n%v\n", tt.want, got)
+			t.Errorf("wrong tree!\nexpected:\n%v\ngot:\n%v\n", tt.want, got)
 		}
 	}
 }

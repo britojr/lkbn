@@ -23,9 +23,11 @@ func computeBIC(ct *model.CTree) float64 {
 func createLKM1LStruct(gs []vars.VarList, lv *vars.Var) *model.CTree {
 	ct := model.NewCTree()
 	root := model.NewCTNode()
-	root.SetPotential(factor.New(gs[0].Union([]*vars.Var{lv})...))
+	// root.SetPotential(factor.New(gs[0].Union([]*vars.Var{lv})...))
+	root.SetPotential(factor.New(lv))
 	ct.AddNode(root)
-	for _, g := range gs[1:] {
+	// for _, g := range gs[1:] {
+	for _, g := range gs {
 		nd := model.NewCTNode()
 		nd.SetPotential(factor.New(g.Union([]*vars.Var{lv})...))
 		root.AddChildren(nd)

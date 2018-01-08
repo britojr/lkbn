@@ -42,6 +42,7 @@ func MaxSpanningTree(nodes []int, edges []WEdge) (mst []WEdge) {
 
 // RootedTree returns a set of edges ordered according the given root node
 func RootedTree(root int, edges []WEdge) (rt []WEdge) {
+	// TODO: find a way to keep the weight of the edges
 	// create adj list
 	adj := make(map[int][]int)
 	for _, e := range edges {

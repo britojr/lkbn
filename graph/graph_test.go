@@ -47,3 +47,41 @@ func TestMaxSpanningTree(t *testing.T) {
 		}
 	}
 }
+
+func TestRootedTree(t *testing.T) {
+	cases := []struct {
+		root        int
+		edges, want []WEdge
+	}{{
+		root: 1,
+		edges: []WEdge{
+			{6, 5, 11},
+			{4, 6, 10},
+			{3, 5, 9},
+			{1, 4, 8},
+			{1, 2, 7},
+			{6, 7, 3},
+		},
+		want: []WEdge{
+			{1, 2, 0},
+			{1, 4, 0},
+			{4, 6, 0},
+			{5, 3, 0},
+			{6, 5, 0},
+			{6, 7, 0},
+		},
+	}}
+	for _, tt := range cases {
+		got := RootedTree(tt.root, tt.edges)
+		if got == nil {
+			t.Fatalf("returned empty graph for edges:\n%v\n", tt.edges)
+		}
+		sort.Slice(got, func(i int, j int) bool {
+			return (got[i].Head < got[j].Head ||
+				(got[i].Head == got[j].Head && got[i].Tail < got[j].Tail))
+		})
+		if !reflect.DeepEqual(tt.want, got) {
+			t.Errorf("wrong tree!\nexpected:\n%v\ngot:\n%v\n", tt.want, got)
+		}
+	}
+}

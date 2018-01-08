@@ -39,3 +39,29 @@ func MaxSpanningTree(nodes []int, edges []WEdge) (mst []WEdge) {
 	}
 	return
 }
+
+// RootedTree returns a set of edges ordered according the given root node
+func RootedTree(root int, edges []WEdge) (rt []WEdge) {
+	// create adj list
+	adj := make(map[int][]int)
+	for _, e := range edges {
+		adj[e.Head] = append(adj[e.Head], e.Tail)
+		adj[e.Tail] = append(adj[e.Tail], e.Head)
+	}
+	// start visit from root
+	visit := make(map[int]struct{})
+	visit[root] = struct{}{}
+	queue := []int{root}
+	for len(queue) > 0 {
+		v := queue[0]
+		queue = queue[1:]
+		for _, u := range adj[v] {
+			if _, ok := visit[u]; !ok {
+				visit[u] = struct{}{}
+				rt = append(rt, WEdge{Head: v, Tail: u})
+				queue = append(queue, u)
+			}
+		}
+	}
+	return
+}

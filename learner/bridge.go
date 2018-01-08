@@ -2,10 +2,14 @@ package learner
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/britojr/btbn/scr"
 	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/emlearner"
+	"github.com/britojr/lkbn/factor"
+	"github.com/britojr/lkbn/graph"
+	"github.com/britojr/lkbn/inference"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
 )
@@ -49,19 +53,14 @@ func (s *BridgeSearch) Search() Solution {
 
 	// creates the latent variables of the model
 	lvs := make([]*vars.Var, len(cls))
+	subtrees := make([]*model.CTree, len(cls))
 	// creates a subtree for each cluster
-	// TODO: update here:
-	// - the LKM1L needs to have the same structure pattern as 2L, that is, the root clique is fully latent
-	// also, it is necessary to add an input parameter to inform the desired latent variable
-	// - then learn and store all subtrees
-	// - for each subtree, run inference for each data case saving the latent variable post marginal
 	for i, cl := range cls {
 		lvs[i] = vars.New(s.nv+i, 2, "", true)
-		_, lvs[i] = learnLKM1L(cl, lvs[i], s.ds, s.paramLearner)
+		subtrees[i], lvs[i] = learnLKM1L(cl, lvs[i], s.ds, s.paramLearner)
 	}
-
-	// TODO: remove
-	ct := model.SampleUniform(s.vs, s.tw)
+	// TODO: update here:
+	ct := buildConnectedTree(lvs, subtrees, s.ds)
 	return ct
 }
 
@@ -215,6 +214,85 @@ func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
 		}
 	}
 	return cls
+}
+
+func computeLatentPosts(subtrees []*model.CTree, ds *data.Dataset) map[int][]*factor.Factor {
+	lvPosts := make(map[int][]*factor.Factor)
+	for _, st := range subtrees {
+		lvID := st.Root().Variables()[0].ID()
+		lvPosts[lvID] = computeLatentPosterior(st, ds)
+	}
+	return lvPosts
+}
+
+// computes the posterior distribution of the latent variable for each line of the dataset
+func computeLatentPosterior(subtree *model.CTree, ds *data.Dataset) []*factor.Factor {
+	lvPost := make([]*factor.Factor, len(ds.Variables()))
+	infalg := inference.NewCTreeCalibration(subtree)
+	for i, evid := range ds.IntMaps() {
+		infalg.Run(evid)
+		lvPost[i] = infalg.CTree().Root().Potential().Copy()
+	}
+	return lvPost
+}
+
+// computes joint distribution of two latent variables based on their posterior distributions
+func computeLatentDist(x, y *vars.Var, ds *data.Dataset,
+	lvPosts map[int][]*factor.Factor) *factor.Factor {
+	// P(x, y|d) = P(x|d) * P(y|d)
+	lvsDist := lvPosts[x.ID()][0].Copy().Times(lvPosts[y.ID()][0])
+	for i := 1; i < len(ds.IntMaps()); i++ {
+		lvsDist.Plus(lvPosts[x.ID()][i].Copy().Times(lvPosts[y.ID()][i]))
+	}
+	lvsDist.Normalize()
+	return lvsDist
+}
+
+func buildConnectedTree(lvs vars.VarList, subtrees []*model.CTree, ds *data.Dataset) *model.CTree {
+	lvPosts := computeLatentPosts(subtrees, ds)
+	// create edges for the full graph, with MI as weight
+	var edges []graph.WEdge
+	nodes := make([]int, len(lvs))
+	for i := range lvs {
+		nodes[i] = i
+		for j := 0; j < i; j++ {
+			dist := computeLatentDist(lvs[i], lvs[j], ds, lvPosts)
+			mi := computePairwiseMI(dist)
+			edges = append(edges, graph.WEdge{
+				Head: i, Tail: j, Weight: mi,
+			})
+		}
+	}
+	// select the edges corresponding to a Max Spanning Tree on the latent variables
+	edges = graph.MaxSpanningTree(nodes, edges)
+	// order edges accoding to root
+	edges = graph.RootedTree(0, edges)
+	// connect the subtrees using the first one as root
+	for _, e := range edges {
+		i, j := e.Head, e.Tail
+		subtrees[i].Root().AddChildren(subtrees[j].Root())
+	}
+	ct := subtrees[0]
+	ct.BfsNodes()
+	return ct
+}
+
+func computePairwiseMI(f *factor.Factor) (mi float64) {
+	// marginals
+	fx := f.Copy().SumOut(f.Variables()[0]).Values()
+	fy := f.Copy().SumOut(f.Variables()[1]).Values()
+	// I(X;Y) = sum_X,Y P(X,Y) log P(X,Y)/P(X)P(Y)
+	i := 0
+	for _, px := range fx {
+		for _, py := range fy {
+			pxy := f.Values()[i]
+			i++
+			if pxy != 0 {
+				mi += pxy * math.Log(pxy/(px*py))
+			}
+		}
+	}
+	return
 }
 
 // finds the highest scoring pair of groups

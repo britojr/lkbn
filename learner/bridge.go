@@ -59,8 +59,10 @@ func (s *BridgeSearch) Search() Solution {
 		lvs[i] = vars.New(s.nv+i, 2, "", true)
 		subtrees[i], lvs[i] = learnLKM1L(cl, lvs[i], s.ds, s.paramLearner)
 	}
-	// TODO: update here:
+	// connects the subtrees
 	ct := buildConnectedTree(lvs, subtrees, s.ds)
+	// learn parameters of the full model
+	ct, _, _ = s.paramLearner.Run(ct, s.ds.IntMaps())
 	return ct
 }
 
@@ -227,7 +229,7 @@ func computeLatentPosts(subtrees []*model.CTree, ds *data.Dataset) map[int][]*fa
 
 // computes the posterior distribution of the latent variable for each line of the dataset
 func computeLatentPosterior(subtree *model.CTree, ds *data.Dataset) []*factor.Factor {
-	lvPost := make([]*factor.Factor, len(ds.Variables()))
+	lvPost := make([]*factor.Factor, len(ds.IntMaps()))
 	infalg := inference.NewCTreeCalibration(subtree)
 	for i, evid := range ds.IntMaps() {
 		infalg.Run(evid)
@@ -249,6 +251,7 @@ func computeLatentDist(x, y *vars.Var, ds *data.Dataset,
 }
 
 func buildConnectedTree(lvs vars.VarList, subtrees []*model.CTree, ds *data.Dataset) *model.CTree {
+	fmt.Println("Connecting subtrees...")
 	lvPosts := computeLatentPosts(subtrees, ds)
 	// create edges for the full graph, with MI as weight
 	var edges []graph.WEdge
@@ -271,6 +274,10 @@ func buildConnectedTree(lvs vars.VarList, subtrees []*model.CTree, ds *data.Data
 	for _, e := range edges {
 		i, j := e.Head, e.Tail
 		subtrees[i].Root().AddChildren(subtrees[j].Root())
+		// add the parent variable to the child clique
+		pi := subtrees[i].Root().Potential()
+		pj := subtrees[j].Root().Potential()
+		subtrees[j].Root().SetPotential(factor.New(pj.Variables().Union(pi.Variables())...))
 	}
 	ct := subtrees[0]
 	ct.BfsNodes()

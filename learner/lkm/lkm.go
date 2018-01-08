@@ -1,4 +1,4 @@
-package learner
+package lkm
 
 import (
 	"github.com/britojr/lkbn/data"
@@ -8,7 +8,8 @@ import (
 	"github.com/britojr/lkbn/vars"
 )
 
-var bicThreshold = 0.1
+// BicThreshold defines the minimum difference to accept a better bic score
+var BicThreshold = 0.1
 
 func computeBIC(ct *model.CTree) float64 {
 	// TODO: replace temporary approximation of BIC by correct equation
@@ -36,7 +37,8 @@ func createLKM1LStruct(gs []vars.VarList, lv *vars.Var) *model.CTree {
 	return ct
 }
 
-func learnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
+// LearnLKM1L creates a LKM model with one latent variable
+func LearnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
 	paramLearner emlearner.EMLearner) (*model.CTree, *vars.Var) {
 	// create initial  structure
 	ct := createLKM1LStruct(gs, lv)
@@ -49,7 +51,7 @@ func learnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
 		newct := createLKM1LStruct(gs, newlv)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
 		newbic := computeBIC(newct)
-		if newbic-bic > bicThreshold {
+		if newbic-bic > BicThreshold {
 			ct = newct
 			bic = newbic
 			lv = newlv
@@ -65,9 +67,9 @@ func learnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
 	return ct, lv
 }
 
-// creates a LKM model with two latent variables
+// LearnLKM2L creates a LKM model with two latent variables
 // as starting point, the first latent variable is parent of group 1 and the second of group 2
-func learnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
+func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 	paramLearner emlearner.EMLearner) (*model.CTree, vars.VarList, []vars.VarList, []vars.VarList) {
 	// create initial structure and learn parameters
 	ct := createLKM2LStruct(gs1, gs2, -1, lvs)
@@ -83,7 +85,7 @@ func learnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 		newct := createLKM2LStruct(gs1, gs2, i, lvs)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
 		newbic := computeBIC(newct)
-		if newbic-bic > bicThreshold {
+		if newbic-bic > BicThreshold {
 			ct = newct
 			bic = newbic
 			gs2 = append(gs2, gs1[i])
@@ -101,7 +103,7 @@ func learnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 			newct := createLKM2LStruct(gs1, gs2, -1, newlvs)
 			newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
 			newbic := computeBIC(newct)
-			if newbic-bic > bicThreshold {
+			if newbic-bic > BicThreshold {
 				ct = newct
 				bic = newbic
 				lvs[i] = newlvs[i]

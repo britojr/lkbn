@@ -1,4 +1,4 @@
-package learner
+package lkm
 
 import (
 	"testing"
@@ -110,7 +110,7 @@ func TestLearnLKM1L(t *testing.T) {
 		5,
 	}}
 	for _, tt := range cases {
-		ct, lv := learnLKM1L(tt.gs, tt.lv, tt.ds, fakeLearner{tt.maxcard})
+		ct, lv := LearnLKM1L(tt.gs, tt.lv, tt.ds, fakeLearner{tt.maxcard})
 		vs := ct.Variables()
 		if len(vs) != len(tt.ds.Variables())+1 {
 			t.Errorf("latent variable wasn't created: %v", vs)

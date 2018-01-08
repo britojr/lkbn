@@ -10,6 +10,7 @@ import (
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/graph"
 	"github.com/britojr/lkbn/inference"
+	"github.com/britojr/lkbn/learner/lkm"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
 )
@@ -57,7 +58,7 @@ func (s *BridgeSearch) Search() Solution {
 	// creates a subtree for each cluster
 	for i, cl := range cls {
 		lvs[i] = vars.New(s.nv+i, 2, "", true)
-		subtrees[i], lvs[i] = learnLKM1L(cl, lvs[i], s.ds, s.paramLearner)
+		subtrees[i], lvs[i] = lkm.LearnLKM1L(cl, lvs[i], s.ds, s.paramLearner)
 	}
 	// connects the subtrees
 	ct := buildConnectedTree(lvs, subtrees, s.ds)
@@ -171,8 +172,8 @@ func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
 			cl1 := append([]vars.VarList(nil), cl...)
 			groupRemove(&cl1, cl2[0])
 			cl = append(cl, cl2[1])
-			ct1L, _ := learnLKM1L(cl, lvs[0], ds, paramLearner)
-			ct2L, _, gs1, gs2 := learnLKM2L(lvs, cl1, cl2, ds, paramLearner)
+			ct1L, _ := lkm.LearnLKM1L(cl, lvs[0], ds, paramLearner)
+			ct2L, _, gs1, gs2 := lkm.LearnLKM2L(lvs, cl1, cl2, ds, paramLearner)
 			fmt.Println("-----------------------------------")
 			fmt.Printf("b1: %v\tb2: %v\n", ct1L.BIC(), ct2L.BIC())
 			fmt.Printf("cl:\n%v(%v)\n", cl, len(cl))
@@ -183,7 +184,7 @@ func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
 			fmt.Printf("ct2L:\n%v\n", ct2L.Nodes())
 			fmt.Println()
 
-			if ct2L.BIC()-ct1L.BIC() > bicThreshold {
+			if ct2L.BIC()-ct1L.BIC() > lkm.BicThreshold {
 				// if fails the test, should keep the group that contains the highest pair
 				if groupContains(gs1, cl[0]) {
 					if groupContains(gs1, cl[1]) {

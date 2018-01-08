@@ -200,7 +200,7 @@ func (c *CTree) BfsNodes() {
 
 // Equal compares cliques and values of two ctrees
 func (c *CTree) Equal(other *CTree) bool {
-	if !c.EqualStructure(other) {
+	if !c.EqualStruct(other) {
 		return false
 	}
 	for _, nd1 := range c.Nodes() {
@@ -217,15 +217,38 @@ func (c *CTree) Equal(other *CTree) bool {
 	return true
 }
 
-// EqualStructure compares the structure of two ctrees
-func (c *CTree) EqualStructure(other *CTree) bool {
-	m1, m2 := c.VarsNeighbors(), other.VarsNeighbors()
+// EqualStruct compares the structure of two ctrees
+func (c *CTree) EqualStruct(other *CTree) bool {
+	m1, m2 := c.varIDtoNeighbors(), other.varIDtoNeighbors()
 	for k, vs := range m1 {
 		if !vs.Equal(m2[k]) {
 			return false
 		}
 	}
 	return true
+}
+
+// varIDtoNeighbors returns a mapping from variables to their neighbors
+func (c *CTree) varIDtoNeighbors() map[int]vars.VarList {
+	m := make(map[int]vars.VarList)
+	for _, nd := range c.nodes {
+		vs := nd.Variables()
+		for i := 0; i < len(vs); i++ {
+			for j := i + 1; j < len(vs); j++ {
+				if mv, ok := m[vs[i].ID()]; ok {
+					m[vs[i].ID()] = mv.Add(vs[j])
+				} else {
+					m[vs[i].ID()] = []*vars.Var{vs[j]}
+				}
+				if mv, ok := m[vs[j].ID()]; ok {
+					m[vs[j].ID()] = mv.Add(vs[i])
+				} else {
+					m[vs[j].ID()] = []*vars.Var{vs[i]}
+				}
+			}
+		}
+	}
+	return m
 }
 
 // VarsNeighbors returns a mapping from variables to their neighbors

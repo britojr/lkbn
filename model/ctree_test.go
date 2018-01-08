@@ -106,3 +106,128 @@ func TestVariables(t *testing.T) {
 		}
 	}
 }
+
+func TestEqualStruct(t *testing.T) {
+	ct1 := `variables:
+- {name: X0,  card: 2}
+- {name: X1,  card: 2}
+- {name: X2,  card: 2}
+- {name: X3,  card: 2}
+- {name: X4,  card: 2}
+- {name: X5,  card: 2}
+- {name: X6,  card: 2}
+- {name: X7,  card: 2}
+- {name: X8,  card: 2}
+- {name: X9,  card: 2}
+- {name: X10, card: 2}
+- {name: Y11,  card: 3, latent: true}
+nodes:
+- clqvars: [X1, X5, X7, Y11]
+- clqvars: [X2, X3, Y11]
+  parent: [X1, X5, X7, Y11]
+- clqvars: [X4, X6, X8, Y11]
+  parent: [X1, X5, X7, Y11]
+- clqvars: [X0, X9, X10, Y11]
+  parent: [X1, X5, X7, Y11]
+`
+	ct2 := `variables:
+- {name: X0,  card: 2}
+- {name: X1,  card: 2}
+- {name: X2,  card: 2}
+- {name: X3,  card: 2}
+- {name: X4,  card: 2}
+- {name: X5,  card: 2}
+- {name: X6,  card: 2}
+- {name: X7,  card: 2}
+- {name: X8,  card: 2}
+- {name: X9,  card: 2}
+- {name: X10, card: 2}
+- {name: Y11,  card: 3, latent: true}
+nodes:
+- clqvars: [X1, X5, X7, Y11]
+- clqvars: [X1, X2, X3, Y11]
+  parent: [X1, X5, X7, Y11]
+- clqvars: [X4, X6, X8, Y11]
+  parent: [X1, X5, X7, Y11]
+- clqvars: [X0, X9, X10, Y11]
+  parent: [X1, X5, X7, Y11]
+`
+	cases := []struct {
+		cta, ctb *CTree
+		equal    bool
+	}{
+		{CTreeFromString(ct1), CTreeFromString(ct1), true},
+		{CTreeFromString(ct1), CTreeFromString(ct2), false},
+	}
+	for _, tt := range cases {
+		got := tt.cta.EqualStruct(tt.ctb)
+		if got != tt.equal {
+			t.Errorf("wrong comp, expect: %v got: %v", tt.equal, got)
+		}
+	}
+}
+
+func TestEqual(t *testing.T) {
+	ct1 := `variables:
+- {name: A,  card: 2}
+- {name: B,  card: 2}
+- {name: C,  card: 2}
+- {name: D,  card: 2}
+- {name: E,  card: 2}
+nodes:
+- clqvars: [A,B,C]
+  values: [0,0,0,0,1,1,1,1]
+- clqvars: [A,B,D]
+  values: [1,1,0,0,1,1,1,1]
+  parent: [A,B,C]
+- clqvars: [B,C,E]
+  values: [0,0,1,1,1,1,1,1]
+  parent: [A,B,C]
+`
+	ct2 := `variables:
+- {name: A,  card: 2}
+- {name: B,  card: 2}
+- {name: C,  card: 2}
+- {name: D,  card: 2}
+- {name: E,  card: 2}
+nodes:
+- clqvars: [A,B,C]
+  values: [1,1,1,1,1,1,1,1]
+- clqvars: [A,B,D]
+  values: [1,1,0,0,1,1,1,1]
+  parent: [A,B,C]
+- clqvars: [B,C,E]
+  values: [0,0,1,1,1,1,1,1]
+  parent: [A,B,C]
+`
+	ct3 := `variables:
+- {name: A,  card: 2}
+- {name: B,  card: 2}
+- {name: C,  card: 2}
+- {name: D,  card: 2}
+- {name: E,  card: 2}
+nodes:
+- clqvars: [A,B,C]
+  values: [1,1,1,1,1,1,1,1]
+- clqvars: [A,B,D]
+  values: [1,1,0,0,1,1,1,1]
+  parent: [A,B,C]
+- clqvars: [A,C,E]
+  values: [0,0,1,1,1,1,1,1]
+  parent: [A,B,C]
+`
+	cases := []struct {
+		cta, ctb *CTree
+		equal    bool
+	}{
+		{CTreeFromString(ct1), CTreeFromString(ct1), true},
+		{CTreeFromString(ct1), CTreeFromString(ct2), false},
+		{CTreeFromString(ct2), CTreeFromString(ct3), false},
+	}
+	for _, tt := range cases {
+		got := tt.cta.Equal(tt.ctb)
+		if got != tt.equal {
+			t.Errorf("wrong comp, expect: %v got: %v", tt.equal, got)
+		}
+	}
+}

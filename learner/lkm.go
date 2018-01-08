@@ -34,54 +34,46 @@ func createLKM1LStruct(gs []vars.VarList, lv *vars.Var) *model.CTree {
 	return ct
 }
 
-func learnLKM1L(gs []vars.VarList, ds *data.Dataset, paramLearner emlearner.EMLearner) *model.CTree {
-	// create new latent variable
-	nstate := 2
-	lv := vars.New(len(ds.Variables()), nstate, "", true)
+func learnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
+	paramLearner emlearner.EMLearner) (*model.CTree, *vars.Var) {
+	// create initial  structure
 	ct := createLKM1LStruct(gs, lv)
 
 	// increase latent cardinality and learn parameters until bic stops increasing
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
 	bic := computeBIC(ct)
 	for {
-		nstate++
-		lv2 := vars.New(len(ds.Variables()), nstate, "", true)
-		newct := createLKM1LStruct(gs, lv2)
+		newlv := vars.New(lv.ID(), lv.NState()+1, "", true)
+		newct := createLKM1LStruct(gs, newlv)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
 		newbic := computeBIC(newct)
 		if newbic-bic > bicThreshold {
 			ct = newct
 			bic = newbic
+			lv = newlv
 		} else {
 			break
 		}
 		// TODO: set some max card limit
-		if nstate >= 5 {
+		if lv.NState() >= 5 {
 			break
 		}
 	}
 	ct.SetBIC(bic)
-	return ct
+	return ct, lv
 }
 
 // creates a LKM model with two latent variables
 // as starting point, the first latent variable is parent of group 1 and the second of group 2
-func learnLKM2L(gs1, gs2 []vars.VarList, ds *data.Dataset,
-	paramLearner emlearner.EMLearner) (*model.CTree, []vars.VarList, []vars.VarList) {
-	// create new latent variables and mount structure
-	nstate := 2
-	lvs := []*vars.Var{
-		vars.New(len(ds.Variables()), nstate, "", true),
-		vars.New(len(ds.Variables())+1, nstate, "", true),
-	}
+func learnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
+	paramLearner emlearner.EMLearner) (*model.CTree, vars.VarList, []vars.VarList, []vars.VarList) {
+	// create initial structure and learn parameters
 	ct := createLKM2LStruct(gs1, gs2, -1, lvs)
-
-	// learn parameters and compute score
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
 	bic := computeBIC(ct)
 
-	// evaluate node relocations
 	// TODO: it could yield better results by evaluating all neighbors before changing
+	// evaluate node relocations
 	for i := range gs1 {
 		if len(gs1) <= 2 {
 			break
@@ -101,23 +93,23 @@ func learnLKM2L(gs1, gs2 []vars.VarList, ds *data.Dataset,
 
 	// increase latent cardinality and learn parameters until bic stops increasing
 	for i, lv := range lvs {
-		lvs2 := append([]*vars.Var(nil), lvs...)
+		newlvs := append([]*vars.Var(nil), lvs...)
 		for {
-			lvs2[i] = vars.New(lv.ID(), lvs2[i].NState()+1, "", true)
-			newct := createLKM2LStruct(gs1, gs2, -1, lvs2)
+			newlvs[i] = vars.New(lv.ID(), newlvs[i].NState()+1, "", true)
+			newct := createLKM2LStruct(gs1, gs2, -1, newlvs)
 			newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
 			newbic := computeBIC(newct)
 			if newbic-bic > bicThreshold {
 				ct = newct
 				bic = newbic
-				lvs[i] = lvs2[i]
+				lvs[i] = newlvs[i]
 			} else {
 				break
 			}
 		}
 	}
 	ct.SetBIC(bic)
-	return ct, gs1, gs2
+	return ct, lvs, gs1, gs2
 }
 
 func createLKM2LStruct(gs1, gs2 []vars.VarList, reloc int, lvs []*vars.Var) *model.CTree {

@@ -94,6 +94,7 @@ func TestLearnLKM1L(t *testing.T) {
 	fname := ioutl.TempFile("lkm_test", content)
 	cases := []struct {
 		gs      []vars.VarList
+		lv      *vars.Var
 		ds      *data.Dataset
 		maxcard int
 	}{{
@@ -103,18 +104,21 @@ func TestLearnLKM1L(t *testing.T) {
 			[]*vars.Var{vs[4], vs[6], vs[8]},
 			[]*vars.Var{vs[0], vs[9], vs[10]},
 		},
+		vars.New(len(vs), 2, "", true),
 		data.NewDataset(fname),
 		5,
 	}}
 	for _, tt := range cases {
-		ct := learnLKM1L(tt.gs, tt.ds, fakeLearner{tt.maxcard})
+		ct, lv := learnLKM1L(tt.gs, tt.lv, tt.ds, fakeLearner{tt.maxcard})
 		vs := ct.Variables()
 		if len(vs) != len(tt.ds.Variables())+1 {
 			t.Errorf("latent variable wasn't created: %v", vs)
 		}
-		lv := ct.Variables()[len(tt.ds.Variables())]
 		if lv.NState() != tt.maxcard {
 			t.Errorf("stoped at wrong cardinality: %v != %v", tt.maxcard, lv.NState())
+		}
+		if lv != ct.Variables()[len(tt.ds.Variables())] {
+			t.Errorf("wrong return: %v != %v", lv, ct.Variables()[len(tt.ds.Variables())])
 		}
 	}
 }

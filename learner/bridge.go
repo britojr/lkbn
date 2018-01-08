@@ -57,7 +57,7 @@ func (s *BridgeSearch) Search() Solution {
 	// - for each subtree, run inference for each data case saving the latent variable post marginal
 	for i, cl := range cls {
 		lvs[i] = vars.New(s.nv+i, 2, "", true)
-		learnLKM1L(cl, s.ds, s.paramLearner)
+		_, lvs[i] = learnLKM1L(cl, lvs[i], s.ds, s.paramLearner)
 	}
 
 	// TODO: remove
@@ -150,6 +150,11 @@ func groupKey(gp vars.VarList) string {
 func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
 	ds *data.Dataset, paramLearner emlearner.EMLearner) [][]vars.VarList {
 	fmt.Println("Finding clusters...")
+	nstates := 2
+	lvs := []*vars.Var{
+		vars.New(len(ds.Variables()), nstates, "", true),
+		vars.New(len(ds.Variables())+1, nstates, "", true),
+	}
 	cls := make([][]vars.VarList, 0)
 	for len(gs) > 0 {
 		cl := highestGroupPair(gs, gpMI)
@@ -165,8 +170,8 @@ func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
 			cl1 := append([]vars.VarList(nil), cl...)
 			groupRemove(&cl1, cl2[0])
 			cl = append(cl, cl2[1])
-			ct1L := learnLKM1L(cl, ds, paramLearner)
-			ct2L, gs1, gs2 := learnLKM2L(cl1, cl2, ds, paramLearner)
+			ct1L, _ := learnLKM1L(cl, lvs[0], ds, paramLearner)
+			ct2L, _, gs1, gs2 := learnLKM2L(lvs, cl1, cl2, ds, paramLearner)
 			fmt.Println("-----------------------------------")
 			fmt.Printf("b1: %v\tb2: %v\n", ct1L.BIC(), ct2L.BIC())
 			fmt.Printf("cl:\n%v(%v)\n", cl, len(cl))

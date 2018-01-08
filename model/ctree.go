@@ -171,7 +171,7 @@ func (c *CTree) Copy() (o *CTree) {
 	}
 	o = new(CTree)
 	o.root = copyNode(c.root)
-	o.nodes = bfsNodes(o.root)
+	o.BfsNodes()
 	return
 }
 
@@ -185,17 +185,17 @@ func copyNode(nd *CTNode) (o *CTNode) {
 	return
 }
 
-func bfsNodes(nd *CTNode) []*CTNode {
-	nodes := []*CTNode{nd}
+// BfsNodes sets node slice in bfs order
+func (c *CTree) BfsNodes() {
+	c.nodes = []*CTNode{c.root}
 	i := 0
-	for i < len(nodes) {
-		pa := nodes[i]
+	for i < len(c.nodes) {
+		pa := c.nodes[i]
 		i++
 		for _, ch := range pa.children {
-			nodes = append(nodes, ch)
+			c.nodes = append(c.nodes, ch)
 		}
 	}
-	return nodes
 }
 
 // Equal compares cliques and values of two ctrees

@@ -200,7 +200,32 @@ func (c *CTree) BfsNodes() {
 
 // Equal compares cliques and values of two ctrees
 func (c *CTree) Equal(other *CTree) bool {
-	return c.String() == other.String()
+	if !c.EqualStructure(other) {
+		return false
+	}
+	for _, nd1 := range c.Nodes() {
+		nd2 := other.FindNode(nd1.Potential().Variables())
+		if nd2 == nil {
+			panic("ctree: can't find node")
+		}
+		for i, v := range nd1.Potential().Values() {
+			if nd2.Potential().Values()[i] != v {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// EqualStructure compares the structure of two ctrees
+func (c *CTree) EqualStructure(other *CTree) bool {
+	m1, m2 := c.VarsNeighbors(), other.VarsNeighbors()
+	for k, vs := range m1 {
+		if !vs.Equal(m2[k]) {
+			return false
+		}
+	}
+	return true
 }
 
 // VarsNeighbors returns a mapping from variables to their neighbors
@@ -232,10 +257,9 @@ func (c *CTree) VarsNeighbors() map[*vars.Var]vars.VarList {
 
 // Variables returns a list of all the variables
 func (c *CTree) Variables() (vs vars.VarList) {
-	// TODO: improve this with bfs or caching the varlist
-	m := c.VarsNeighbors()
-	for v := range m {
-		vs.Add(v)
+	// TODO: improve by caching the varlist
+	for _, nd := range c.nodes {
+		vs = vs.Union(nd.Variables())
 	}
 	return vs
 }

@@ -12,7 +12,7 @@ import (
 
 func TestCreateLKMStruct(t *testing.T) {
 	vs := vars.NewList([]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, nil)
-	strct := `
+	vstr := `
 variables:
 - {name: X0,  card: 2}
 - {name: X1,  card: 2}
@@ -25,7 +25,15 @@ variables:
 - {name: X8,  card: 2}
 - {name: X9,  card: 2}
 - {name: X10, card: 2}
+`
+	lvs := []*vars.Var{vars.New(11, 3, "Y11", true), vars.New(12, 5, "Y12", true)}
+	lv0 := `
 - {name: Y11,  card: 3, latent: true}
+`
+	lv1 := `
+- {name: Y12,  card: 5, latent: true}
+`
+	nodes1L := `
 nodes:
 - clqvars: [Y11]
 - clqvars: [X1, X5, X7, Y11]
@@ -37,22 +45,48 @@ nodes:
 - clqvars: [X0, X9, X10, Y11]
   parent: [Y11]
 `
+	nodes2L := `
+nodes:
+- clqvars: [Y11, Y12]
+- clqvars: [X1, X5, X7, Y12]
+  parent: [Y11, Y12]
+- clqvars: [X2, X3, Y12]
+  parent: [Y11, Y12]
+- clqvars: [X4, X6, X8, Y11]
+  parent: [Y11, Y12]
+- clqvars: [X0, X9, X10, Y12]
+  parent: [Y11, Y12]
+`
+	struct1L := vstr + lv0 + nodes1L
+	struct2L := vstr + lv0 + lv1 + nodes2L
 	cases := []struct {
-		gs []vars.VarList
-		lv *vars.Var
-		ct *model.CTree
+		gs1, gs2 []vars.VarList
+		lvs      vars.VarList
+		reloc    int
+		ct       *model.CTree
 	}{{
 		[]vars.VarList{
 			[]*vars.Var{vs[1], vs[5], vs[7]},
 			[]*vars.Var{vs[2], vs[3]},
 			[]*vars.Var{vs[4], vs[6], vs[8]},
 			[]*vars.Var{vs[0], vs[9], vs[10]},
+		}, nil,
+		lvs[:1], -1,
+		model.CTreeFromString(struct1L),
+	}, {
+		[]vars.VarList{
+			[]*vars.Var{vs[4], vs[6], vs[8]},
+			[]*vars.Var{vs[2], vs[3]},
 		},
-		vars.New(11, 3, "Y11", true),
-		model.CTreeFromString(strct),
+		[]vars.VarList{
+			[]*vars.Var{vs[1], vs[5], vs[7]},
+			[]*vars.Var{vs[0], vs[9], vs[10]},
+		},
+		lvs, 1,
+		model.CTreeFromString(struct2L),
 	}}
 	for _, tt := range cases {
-		ct := createLKMStruct([]*vars.Var{tt.lv}, tt.gs, nil, -1)
+		ct := createLKMStruct(tt.lvs, tt.gs1, tt.gs2, tt.reloc)
 		if !tt.ct.EqualStruct(ct) {
 			t.Errorf("different tree:\n%v\n-----\n%v\n", tt.ct, ct)
 		}

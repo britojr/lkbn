@@ -97,4 +97,22 @@ nodes:
 			t.Errorf("wrong ctree:\n%v\n!=\n%v\n", got, ctout)
 		}
 	}
+	// em parallel should reach the same results
+	for _, tt := range cases {
+		ctin := model.CTreeFromString(tt.ctin)
+		e := new(emAlg)
+		e.maxIters = 0
+		e.threshold = 1e-8
+		e.numThreads = 5
+		inf := inference.NewCTreeCalibration(ctin)
+		ll := e.runStep(inf, tt.data)
+		if !floats.AlmostEqual(tt.ll, ll, tol) {
+			t.Errorf("wrong ll %v != %v", tt.ll, ll)
+		}
+		ctout := model.CTreeFromString(tt.ctout)
+		got := inf.CTree()
+		if !got.Equal(ctout) {
+			t.Errorf("wrong ctree:\n%v\n!=\n%v\n", got, ctout)
+		}
+	}
 }

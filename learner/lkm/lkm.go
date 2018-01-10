@@ -18,29 +18,20 @@ func LearnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
 	paramLearner emlearner.EMLearner) (*model.CTree, *vars.Var) {
 	// create initial  structure
 	ct := createLKMStruct([]*vars.Var{lv}, gs, nil, -1)
-
-	// increase latent cardinality and learn parameters until bic stops increasing
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
-	bic := computeBIC(ct, ds)
+	ct.SetBIC(computeBIC(ct, ds))
+	lvs := []*vars.Var{lv}
+	// increase latent cardinality until bic stops increasing
 	for {
-		newlv := vars.New(lv.ID(), lv.NState()+1, "", true)
-		newct := createLKMStruct([]*vars.Var{newlv}, gs, nil, -1)
-		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
-		newbic := computeBIC(newct, ds)
-		if newbic-bic > BicThreshold {
+		newct, newlvs := bestModelSI(ct, ds, paramLearner, lvs, gs, nil)
+		if newct.BIC()-ct.BIC() > BicThreshold {
 			ct = newct
-			bic = newbic
-			lv = newlv
+			lvs = newlvs
 		} else {
 			break
 		}
-		// TODO: define some max cardinality criteria here
-		// if lv.NState() >= 5 {
-		// 	break
-		// }
 	}
-	ct.SetBIC(bic)
-	return ct, lv
+	return ct, lvs[0]
 }
 
 // LearnLKM2L creates a LKM model with two latent variables
@@ -71,25 +62,39 @@ func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 		}
 	}
 
-	// increase latent cardinality and learn parameters until bic stops increasing
-	for i, lv := range lvs {
-		newlvs := append([]*vars.Var(nil), lvs...)
-		for {
-			newlvs[i] = vars.New(lv.ID(), newlvs[i].NState()+1, "", true)
-			newct := createLKMStruct(newlvs, gs1, gs2, -1)
-			newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
-			newbic := computeBIC(newct, ds)
-			if newbic-bic > BicThreshold {
-				ct = newct
-				bic = newbic
-				lvs[i] = newlvs[i]
-			} else {
-				break
-			}
+	// increase latent cardinality until bic stops increasing
+	for {
+		newct, newlvs := bestModelSI(ct, ds, paramLearner, lvs, gs1, gs2)
+		if newct.BIC()-ct.BIC() > BicThreshold {
+			ct = newct
+			lvs = newlvs
+		} else {
+			break
 		}
 	}
-	ct.SetBIC(bic)
 	return ct, lvs, gs1, gs2
+}
+
+func bestModelSI(ct *model.CTree, ds *data.Dataset, paramLearner emlearner.EMLearner,
+	lvs vars.VarList, gs1, gs2 []vars.VarList) (bestct *model.CTree, bestlvs vars.VarList) {
+	// TODO: improve this with local EM
+	for i, lv := range lvs {
+		// TODO: define some max cardinality criteria here
+		// if lv.NState() >= 5 {
+		// 	break
+		// }
+		newlvs := append([]*vars.Var(nil), lvs...)
+		newlvs[i] = vars.New(lv.ID(), newlvs[i].NState()+1, "", true)
+		newct := createLKMStruct(newlvs, gs1, gs2, -1)
+		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
+		newbic := computeBIC(newct, ds)
+		newct.SetBIC(newbic)
+		if bestct == nil || newct.BIC() > bestct.BIC() {
+			bestct = newct
+			bestlvs = newlvs
+		}
+	}
+	return
 }
 
 // creates a new ctree structure with latent variables as parents of every clique

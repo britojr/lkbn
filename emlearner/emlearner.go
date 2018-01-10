@@ -35,6 +35,7 @@ type EMLearner interface {
 	Run(m *model.CTree, evset []map[int]int) (*model.CTree, float64, int)
 	SetProperties(props map[string]string)
 	PrintProperties()
+	Copy() EMLearner
 }
 
 // implementation of EMLearner
@@ -58,6 +59,19 @@ func New() EMLearner {
 	e.numRestarts = cNumRestarts
 	e.numInitIters = cNumInitIters
 	return e
+}
+
+// Copy returns a new EMLearner with the same properties as this
+func (e *emAlg) Copy() EMLearner {
+	other := new(emAlg)
+	// set defaults
+	other.reuse = e.reuse
+	other.threshold = e.threshold
+	other.maxIters = e.maxIters
+	other.numRestarts = e.numRestarts
+	other.numInitIters = e.numInitIters
+	other.numThreads = e.numThreads
+	return other
 }
 
 func (e *emAlg) SetProperties(props map[string]string) {

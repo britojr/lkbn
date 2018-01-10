@@ -1,6 +1,8 @@
 package lkm
 
 import (
+	"math"
+
 	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/emlearner"
 	"github.com/britojr/lkbn/factor"
@@ -19,12 +21,12 @@ func LearnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
 
 	// increase latent cardinality and learn parameters until bic stops increasing
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
-	bic := computeBIC(ct)
+	bic := computeBIC(ct, ds)
 	for {
 		newlv := vars.New(lv.ID(), lv.NState()+1, "", true)
 		newct := createLKMStruct([]*vars.Var{newlv}, gs, nil, -1)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
-		newbic := computeBIC(newct)
+		newbic := computeBIC(newct, ds)
 		if newbic-bic > BicThreshold {
 			ct = newct
 			bic = newbic
@@ -48,7 +50,7 @@ func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 	// create initial structure and learn parameters
 	ct := createLKMStruct(lvs, gs1, gs2, -1)
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
-	bic := computeBIC(ct)
+	bic := computeBIC(ct, ds)
 
 	// TODO: it could yield better results by evaluating all neighbors before changing
 	// evaluate node relocations
@@ -58,7 +60,7 @@ func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 		}
 		newct := createLKMStruct(lvs, gs1, gs2, i)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
-		newbic := computeBIC(newct)
+		newbic := computeBIC(newct, ds)
 		if newbic-bic > BicThreshold {
 			ct = newct
 			bic = newbic
@@ -76,7 +78,7 @@ func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 			newlvs[i] = vars.New(lv.ID(), newlvs[i].NState()+1, "", true)
 			newct := createLKMStruct(newlvs, gs1, gs2, -1)
 			newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
-			newbic := computeBIC(newct)
+			newbic := computeBIC(newct, ds)
 			if newbic-bic > BicThreshold {
 				ct = newct
 				bic = newbic
@@ -121,11 +123,21 @@ func createLKMStruct(lvs []*vars.Var, gs1, gs2 []vars.VarList, reloc int) *model
 	return ct
 }
 
-func computeBIC(ct *model.CTree) float64 {
-	// TODO: replace temporary approximation of BIC by correct equation
-	numparms := 0
-	// for _, nd := range ct.Nodes() {
-	// 	numparms += len(nd.Potential().Values())
-	// }
-	return ct.Score() - float64(numparms)
+// computes Bayesian Information Criterion:
+// 	BIC = LL - ( model_size * ln(N)/2 )
+func computeBIC(ct *model.CTree, ds *data.Dataset) float64 {
+	modelsize := computeModelSize(ct)
+	return ct.Score() - float64(modelsize)*math.Log(float64(len(ds.IntMaps())))/2.0
+}
+
+func computeModelSize(ct *model.CTree) (modelsize int) {
+	for _, nd := range ct.Nodes() {
+		modelsize += len(nd.Potential().Values())
+		if nd.Parent() != nil {
+			modelsize -= nd.Potential().Variables().Intersec(nd.Parent().Variables()).NStates()
+		} else {
+			modelsize--
+		}
+	}
+	return
 }

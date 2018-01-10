@@ -34,10 +34,10 @@ func LearnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
 		} else {
 			break
 		}
-		// TODO: set some max card limit
-		if lv.NState() >= 5 {
-			break
-		}
+		// TODO: define some max cardinality criteria here
+		// if lv.NState() >= 5 {
+		// 	break
+		// }
 	}
 	ct.SetBIC(bic)
 	return ct, lv

@@ -41,7 +41,7 @@ func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 	// create initial structure and learn parameters
 	ct := createLKMStruct(lvs, gs1, gs2, -1)
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
-	bic := computeBIC(ct, ds)
+	ct.SetBIC(computeBIC(ct, ds))
 
 	// TODO: it could yield better results by evaluating all neighbors before changing
 	// evaluate node relocations
@@ -51,10 +51,9 @@ func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 		}
 		newct := createLKMStruct(lvs, gs1, gs2, i)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
-		newbic := computeBIC(newct, ds)
-		if newbic-bic > BicThreshold {
+		newct.SetBIC(computeBIC(newct, ds))
+		if newct.BIC()-ct.BIC() > BicThreshold {
 			ct = newct
-			bic = newbic
 			gs2 = append(gs2, gs1[i])
 			gs1 = append(gs1[:i], gs1[i+1:]...)
 		} else {

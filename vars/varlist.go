@@ -123,18 +123,18 @@ func (vl *VarList) Remove(xid int) VarList {
 }
 
 // IntersecID returns new list with elements present in vl and in ids
-func (vl VarList) IntersecID(ids ...int) (w VarList) {
-	sort.Ints(ids)
-	w = make([]*Var, 0, len(vl))
-	j := 0
-	for _, v := range vl {
-		for ; j < len(ids) && ids[j] < v.ID(); j++ {
-		}
-		if j < len(ids) && ids[j] == v.ID() {
-			w = append(w, v)
-			j++
-			continue
-		}
-	}
-	return
-}
+// func (vl VarList) IntersecID(ids ...int) (w VarList) {
+// 	sort.Ints(ids)
+// 	w = make([]*Var, 0, len(vl))
+// 	j := 0
+// 	for _, v := range vl {
+// 		for ; j < len(ids) && ids[j] < v.ID(); j++ {
+// 		}
+// 		if j < len(ids) && ids[j] == v.ID() {
+// 			w = append(w, v)
+// 			j++
+// 			continue
+// 		}
+// 	}
+// 	return
+// }

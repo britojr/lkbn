@@ -69,6 +69,12 @@ func (s *BridgeSearch) Search() Solution {
 
 // splits varlist in groups of size k, grouping variables by highest MI
 func groupVariables(vs vars.VarList, k int, mutInfo *scr.MutInfo) (gs []vars.VarList) {
+	if k < 2 {
+		for _, v := range vs {
+			gs = append(gs, []*vars.Var{v})
+		}
+		return
+	}
 	remain := vs.Copy()
 	for len(remain) != 0 {
 		g := highestPair(remain, mutInfo)

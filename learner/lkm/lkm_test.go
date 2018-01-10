@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/britojr/lkbn/data"
+	"github.com/britojr/lkbn/emlearner"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
 	"github.com/britojr/utl/ioutl"
@@ -63,6 +64,7 @@ type fakeLearner struct {
 
 func (f fakeLearner) SetProperties(props map[string]string) {}
 func (f fakeLearner) PrintProperties()                      {}
+func (f fakeLearner) Copy() emlearner.EMLearner             { return f }
 func (f fakeLearner) Run(m *model.CTree, evset []map[int]int) (*model.CTree, float64, int) {
 	vs := m.Variables()
 	c := 1

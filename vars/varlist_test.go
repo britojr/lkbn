@@ -143,6 +143,9 @@ func TestDiff(t *testing.T) {
 		a := NewList(tt.a, nil)
 		b := NewList(tt.b, nil)
 		got := a.Diff(b)
+		if len(got) != len(tt.want) {
+			t.Errorf("wrong size: (%v) !=(%v)", tt.want, got)
+		}
 		for i, v := range tt.want {
 			if v != got[i].ID() {
 				t.Errorf("(%v) - (%v) = (%v) !=(%v)", a, b, tt.want, got)
@@ -167,9 +170,37 @@ func TestUnion(t *testing.T) {
 		a := NewList(tt.a, nil)
 		b := NewList(tt.b, nil)
 		got := a.Union(b)
+		if len(got) != len(tt.want) {
+			t.Errorf("wrong size: (%v) !=(%v)", tt.want, got)
+		}
 		for i, v := range tt.want {
 			if v != got[i].ID() {
 				t.Errorf("(%v) union (%v) = (%v) !=(%v)", a, b, tt.want, got)
+			}
+		}
+	}
+}
+
+func TestIntersec(t *testing.T) {
+	cases := []struct {
+		a, b, want []int
+	}{
+		{[]int(nil), []int(nil), []int(nil)},
+		{[]int{1}, []int{1}, []int{1}},
+		{[]int{3}, []int{1}, []int(nil)},
+		{[]int{2, 3}, []int{}, []int(nil)},
+		{[]int{6, 4, 2, 8}, []int{8, 9, 3, 1, 2}, []int{2, 8}},
+	}
+	for _, tt := range cases {
+		a := NewList(tt.a, nil)
+		b := NewList(tt.b, nil)
+		got := a.Intersec(b)
+		if len(got) != len(tt.want) {
+			t.Errorf("wrong size: (%v) !=(%v)", tt.want, got)
+		}
+		for i, v := range tt.want {
+			if v != got[i].ID() {
+				t.Errorf("(%v) intersec (%v) = (%v) !=(%v)", a, b, tt.want, got)
 			}
 		}
 	}

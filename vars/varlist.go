@@ -1,6 +1,10 @@
 package vars
 
-import "sort"
+import (
+	"sort"
+
+	"github.com/britojr/utl/ints"
+)
 
 // VarList an ordered set of variables
 type VarList []*Var
@@ -83,6 +87,22 @@ func (vl VarList) Union(other VarList) (w VarList) {
 	}
 	for ; j < len(other); j++ {
 		w = append(w, other[j])
+	}
+	return
+}
+
+// Intersec returns new list with elements intersection
+func (vl VarList) Intersec(other VarList) (w VarList) {
+	w = make([]*Var, 0, ints.Max([]int{len(vl), len(other)}))
+	j := 0
+	for _, v := range vl {
+		for ; j < len(other) && other[j].ID() < v.ID(); j++ {
+		}
+		if j < len(other) && other[j].ID() == v.ID() {
+			w = append(w, v)
+			j++
+			continue
+		}
 	}
 	return
 }

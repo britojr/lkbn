@@ -11,44 +11,18 @@ import (
 // BicThreshold defines the minimum difference to accept a better bic score
 var BicThreshold = 0.1
 
-func computeBIC(ct *model.CTree) float64 {
-	// TODO: replace temporary approximation of BIC by correct equation
-	numparms := 0
-	// for _, nd := range ct.Nodes() {
-	// 	numparms += len(nd.Potential().Values())
-	// }
-	return ct.Score() - float64(numparms)
-}
-
-// creates a new tree structure with lv as parent of every clique
-func createLKM1LStruct(gs []vars.VarList, lv *vars.Var) *model.CTree {
-	ct := model.NewCTree()
-	root := model.NewCTNode()
-	// root.SetPotential(factor.New(gs[0].Union([]*vars.Var{lv})...))
-	root.SetPotential(factor.New(lv))
-	ct.AddNode(root)
-	// for _, g := range gs[1:] {
-	for _, g := range gs {
-		nd := model.NewCTNode()
-		nd.SetPotential(factor.New(g.Union([]*vars.Var{lv})...))
-		root.AddChildren(nd)
-		ct.AddNode(nd)
-	}
-	return ct
-}
-
 // LearnLKM1L creates a LKM model with one latent variable
 func LearnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
 	paramLearner emlearner.EMLearner) (*model.CTree, *vars.Var) {
 	// create initial  structure
-	ct := createLKM1LStruct(gs, lv)
+	ct := createLKMStruct([]*vars.Var{lv}, gs, nil, -1)
 
 	// increase latent cardinality and learn parameters until bic stops increasing
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
 	bic := computeBIC(ct)
 	for {
 		newlv := vars.New(lv.ID(), lv.NState()+1, "", true)
-		newct := createLKM1LStruct(gs, newlv)
+		newct := createLKMStruct([]*vars.Var{newlv}, gs, nil, -1)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
 		newbic := computeBIC(newct)
 		if newbic-bic > BicThreshold {
@@ -72,7 +46,7 @@ func LearnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
 func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 	paramLearner emlearner.EMLearner) (*model.CTree, vars.VarList, []vars.VarList, []vars.VarList) {
 	// create initial structure and learn parameters
-	ct := createLKM2LStruct(gs1, gs2, -1, lvs)
+	ct := createLKMStruct(lvs, gs1, gs2, -1)
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
 	bic := computeBIC(ct)
 
@@ -82,7 +56,7 @@ func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 		if len(gs1) <= 2 {
 			break
 		}
-		newct := createLKM2LStruct(gs1, gs2, i, lvs)
+		newct := createLKMStruct(lvs, gs1, gs2, i)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
 		newbic := computeBIC(newct)
 		if newbic-bic > BicThreshold {
@@ -100,7 +74,7 @@ func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 		newlvs := append([]*vars.Var(nil), lvs...)
 		for {
 			newlvs[i] = vars.New(lv.ID(), newlvs[i].NState()+1, "", true)
-			newct := createLKM2LStruct(gs1, gs2, -1, newlvs)
+			newct := createLKMStruct(newlvs, gs1, gs2, -1)
 			newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
 			newbic := computeBIC(newct)
 			if newbic-bic > BicThreshold {
@@ -116,7 +90,9 @@ func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 	return ct, lvs, gs1, gs2
 }
 
-func createLKM2LStruct(gs1, gs2 []vars.VarList, reloc int, lvs []*vars.Var) *model.CTree {
+// creates a new ctree structure with latent variables as parents of every clique
+// it can be used with one or two latent variables
+func createLKMStruct(lvs []*vars.Var, gs1, gs2 []vars.VarList, reloc int) *model.CTree {
 	ct := model.NewCTree()
 	root := model.NewCTNode()
 	root.SetPotential(factor.New(lvs...))
@@ -143,4 +119,13 @@ func createLKM2LStruct(gs1, gs2 []vars.VarList, reloc int, lvs []*vars.Var) *mod
 		ct.AddNode(nd)
 	}
 	return ct
+}
+
+func computeBIC(ct *model.CTree) float64 {
+	// TODO: replace temporary approximation of BIC by correct equation
+	numparms := 0
+	// for _, nd := range ct.Nodes() {
+	// 	numparms += len(nd.Potential().Values())
+	// }
+	return ct.Score() - float64(numparms)
 }

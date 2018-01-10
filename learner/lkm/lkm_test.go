@@ -10,7 +10,7 @@ import (
 	"github.com/britojr/utl/ioutl"
 )
 
-func TestCreateLKM1LStruct(t *testing.T) {
+func TestCreateLKMStruct(t *testing.T) {
 	vs := vars.NewList([]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, nil)
 	strct := `
 variables:
@@ -27,13 +27,15 @@ variables:
 - {name: X10, card: 2}
 - {name: Y11,  card: 3, latent: true}
 nodes:
+- clqvars: [Y11]
 - clqvars: [X1, X5, X7, Y11]
+  parent: [Y11]
 - clqvars: [X2, X3, Y11]
-  parent: [X1, X5, X7, Y11]
+  parent: [Y11]
 - clqvars: [X4, X6, X8, Y11]
-  parent: [X1, X5, X7, Y11]
+  parent: [Y11]
 - clqvars: [X0, X9, X10, Y11]
-  parent: [X1, X5, X7, Y11]
+  parent: [Y11]
 `
 	cases := []struct {
 		gs []vars.VarList
@@ -50,11 +52,10 @@ nodes:
 		model.CTreeFromString(strct),
 	}}
 	for _, tt := range cases {
-		createLKM1LStruct(tt.gs, tt.lv)
-		// ct := createLKM1LStruct(tt.gs, tt.lv)
-		// if !tt.ct.Equal(ct) {
-		// 	t.Errorf("different tree:\n%v\n-----\n%v\n", tt.ct, ct)
-		// }
+		ct := createLKMStruct([]*vars.Var{tt.lv}, tt.gs, nil, -1)
+		if !tt.ct.EqualStruct(ct) {
+			t.Errorf("different tree:\n%v\n-----\n%v\n", tt.ct, ct)
+		}
 	}
 }
 

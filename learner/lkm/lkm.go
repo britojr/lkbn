@@ -1,12 +1,11 @@
 package lkm
 
 import (
-	"math"
-
 	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/emlearner"
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/model"
+	"github.com/britojr/lkbn/scores"
 	"github.com/britojr/lkbn/vars"
 )
 
@@ -19,7 +18,7 @@ func LearnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
 	// create initial  structure
 	ct := createLKMStruct([]*vars.Var{lv}, gs, nil, -1)
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
-	ct.SetBIC(computeBIC(ct, ds))
+	ct.SetBIC(scores.ComputeBIC(ct, ds))
 	lvs := []*vars.Var{lv}
 
 	ct, lvs = applyStateInsertion(ct, ds, paramLearner, lvs, gs, nil)
@@ -33,13 +32,18 @@ func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 	// create initial structure and learn parameters
 	ct := createLKMStruct(lvs, gs1, gs2, -1)
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
-	ct.SetBIC(computeBIC(ct, ds))
+	ct.SetBIC(scores.ComputeBIC(ct, ds))
 
 	// TODO: correctly apply NI search if necessary
 	// TODO: check if its better to use SI before or after NR
 	// ct, lvs = applyStateInsertion(ct, ds, paramLearner, lvs, gs1, gs2)
 	ct, gs1, gs2 = applyNodeRelocation(ct, ds, paramLearner, lvs, gs1, gs2)
-	ct, lvs = applyStateInsertion(ct, ds, paramLearner, lvs, gs1, gs2)
+	// ct, lvs = applyStateInsertion(ct, ds, paramLearner, lvs, gs1, gs2)
+	// TODO: if this is really better, create a spefic loop for this:
+	lvs1, lvs2 := lvs[:1], lvs[1:]
+	ct, lvs1 = applyStateInsertion(ct, ds, paramLearner, lvs1, gs1, gs2)
+	ct, lvs2 = applyStateInsertion(ct, ds, paramLearner, lvs2, gs1, gs2)
+	lvs = append(lvs1, lvs2...)
 	return ct, lvs, gs1, gs2
 }
 
@@ -86,7 +90,7 @@ func bestModelSI(ct *model.CTree, ds *data.Dataset, paramLearner emlearner.EMLea
 		newlvs[i] = vars.New(lv.ID(), newlvs[i].NState()+1, "", true)
 		newct := createLKMStruct(newlvs, gs1, gs2, -1)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
-		newct.SetBIC(computeBIC(newct, ds))
+		newct.SetBIC(scores.ComputeBIC(newct, ds))
 		if bestct == nil || newct.BIC() > bestct.BIC() {
 			bestct = newct
 			bestlvs = newlvs
@@ -105,7 +109,7 @@ func bestModelNR(ct *model.CTree, ds *data.Dataset, paramLearner emlearner.EMLea
 	for i := range gs1 {
 		newct := createLKMStruct(lvs, gs1, gs2, i)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
-		newct.SetBIC(computeBIC(newct, ds))
+		newct.SetBIC(scores.ComputeBIC(newct, ds))
 		if bestct == nil || newct.BIC() > bestct.BIC() {
 			bestct = newct
 			reloc = i
@@ -143,23 +147,4 @@ func createLKMStruct(lvs []*vars.Var, gs1, gs2 []vars.VarList, reloc int) *model
 		ct.AddNode(nd)
 	}
 	return ct
-}
-
-// computes Bayesian Information Criterion:
-// 	BIC = LL - ( model_size * ln(N)/2 )
-func computeBIC(ct *model.CTree, ds *data.Dataset) float64 {
-	modelsize := computeModelSize(ct)
-	return ct.Score() - float64(modelsize)*math.Log(float64(len(ds.IntMaps())))/2.0
-}
-
-func computeModelSize(ct *model.CTree) (modelsize int) {
-	for _, nd := range ct.Nodes() {
-		modelsize += len(nd.Potential().Values())
-		if nd.Parent() != nil {
-			modelsize -= nd.Potential().Variables().Intersec(nd.Parent().Variables()).NStates()
-		} else {
-			modelsize--
-		}
-	}
-	return
 }

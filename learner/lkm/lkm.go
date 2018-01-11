@@ -45,7 +45,7 @@ func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 	// TODO: correctly apply NI search if necessary
 	// TODO: check if its better to use SI before or after NR
 	// ct, lvs = applyStateInsertion(ct, ds, paramLearner, lvs, gs1, gs2)
-	ct, gs1, gs2 = applyNodeRelocation(ct, ds, paramLearner, lvs, gs1, gs2)
+	// ct, gs1, gs2 = applyNodeRelocation(ct, ds, paramLearner, lvs, gs1, gs2)
 	// ct, lvs = applyStateInsertion(ct, ds, paramLearner, lvs, gs1, gs2)
 	ct, lvs = applySeqStateInsertion(ct, ds, paramLearner, lvs, gs1, gs2)
 	return ct, lvs, gs1, gs2

@@ -284,7 +284,10 @@ func buildConnectedTree(lvs vars.VarList, subtrees []*model.CTree, ds *data.Data
 		// add the parent variable to the child clique
 		pi := subtrees[i].Root().Potential()
 		pj := subtrees[j].Root().Potential()
+		fmt.Printf("before:\n%v\n%v\n", pi.Variables(), pj.Variables())
 		subtrees[j].Root().SetPotential(factor.New(pj.Variables().Union(pi.Variables())...))
+		fmt.Printf("after:\n%v\n%v\n", pi.Variables(), pj.Variables())
+		fmt.Printf("subtree:\n%v\n", subtrees[j].Root().Variables())
 	}
 	ct := subtrees[0]
 	ct.BfsNodes()

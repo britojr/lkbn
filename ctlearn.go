@@ -11,6 +11,7 @@ import (
 	"github.com/britojr/lkbn/emlearner"
 	"github.com/britojr/lkbn/learner"
 	"github.com/britojr/lkbn/model"
+	"github.com/britojr/lkbn/scores"
 	"github.com/britojr/utl/ioutl"
 )
 
@@ -116,11 +117,13 @@ func runCTParamLearner() {
 	start := time.Now()
 	m, ll, it := eml.Run(ct, dataSet.IntMaps())
 	elapsed := time.Since(start)
+	m.SetBIC(scores.ComputeBIC(m, dataSet))
 
 	log.Printf("========== SOLUTION ==============================\n")
 	log.Printf("Time: %v\n", elapsed)
 	log.Printf("Iterations: %v\n", it)
 	log.Printf("LogLikelihood: %.6f\n", ll)
+	log.Printf("BIC: %.6f\n", m.BIC())
 	log.Printf("--------------------------------------------------\n")
 
 	if len(modelFOut) > 0 {

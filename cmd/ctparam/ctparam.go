@@ -15,6 +15,7 @@ import (
 	"github.com/britojr/lkbn/emlearner"
 	"github.com/britojr/lkbn/learner"
 	"github.com/britojr/lkbn/model"
+	"github.com/britojr/lkbn/scores"
 	"github.com/britojr/utl/ioutl"
 )
 
@@ -48,12 +49,14 @@ func main() {
 		start := time.Now()
 		ct, ll, it := eml.Run(ct, ds.IntMaps())
 		elapsed := time.Since(start)
+		ct.SetBIC(scores.ComputeBIC(ct, ds))
 
 		log.Printf("========== SOLUTION ==============================\n")
 		log.Printf("Structure: %v\n", ctFile)
 		log.Printf("Time: %v\n", elapsed)
 		log.Printf("Iterations: %v\n", it)
 		log.Printf("LogLikelihood: %.6f\n", ll)
+		log.Printf("BIC: %.6f\n", ct.BIC())
 		log.Printf("Linked MI: %.6f\n", learner.ComputeMIScore(ct, mutInfo))
 		log.Printf("--------------------------------------------------\n")
 

@@ -52,6 +52,7 @@ func (c *CTree) Write(fname string) {
 	f := ioutl.CreateFile(fname)
 	d := []byte(c.String())
 	fmt.Fprintf(f, "# Score: %v\n", c.score)
+	fmt.Fprintf(f, "# BIC: %v\n", c.bic)
 	f.Write(d)
 	f.Close()
 }

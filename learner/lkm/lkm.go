@@ -1,6 +1,8 @@
 package lkm
 
 import (
+	"fmt"
+
 	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/emlearner"
 	"github.com/britojr/lkbn/factor"
@@ -21,6 +23,9 @@ func LearnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
 	ct.SetBIC(scores.ComputeBIC(ct, ds))
 	lvs := []*vars.Var{lv}
 
+	fmt.Printf("LearnLKM1L\n")
+	fmt.Printf("current: %v\n", ct.Nodes())
+	fmt.Printf("bic: %v\n", ct.BIC())
 	ct, lvs = applyStateInsertion(ct, ds, paramLearner, lvs, gs, nil)
 	return ct, lvs[0]
 }
@@ -34,17 +39,42 @@ func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
 	ct.SetBIC(scores.ComputeBIC(ct, ds))
 
+	fmt.Printf("LearnLKM2L\n")
+	fmt.Printf("current: %v\n", ct.Nodes())
+	fmt.Printf("bic: %v\n", ct.BIC())
 	// TODO: correctly apply NI search if necessary
 	// TODO: check if its better to use SI before or after NR
 	// ct, lvs = applyStateInsertion(ct, ds, paramLearner, lvs, gs1, gs2)
 	ct, gs1, gs2 = applyNodeRelocation(ct, ds, paramLearner, lvs, gs1, gs2)
 	// ct, lvs = applyStateInsertion(ct, ds, paramLearner, lvs, gs1, gs2)
-	// TODO: if this is really better, create a spefic loop for this:
-	lvs1, lvs2 := lvs[:1], lvs[1:]
-	ct, lvs1 = applyStateInsertion(ct, ds, paramLearner, lvs1, gs1, gs2)
-	ct, lvs2 = applyStateInsertion(ct, ds, paramLearner, lvs2, gs1, gs2)
-	lvs = append(lvs1, lvs2...)
+	ct, lvs = applySeqStateInsertion(ct, ds, paramLearner, lvs, gs1, gs2)
 	return ct, lvs, gs1, gs2
+}
+
+// increase latent cardinality until bic stops increasing
+func applySeqStateInsertion(ct *model.CTree, ds *data.Dataset, paramLearner emlearner.EMLearner,
+	lvs vars.VarList, gs1, gs2 []vars.VarList) (*model.CTree, vars.VarList) {
+	bestlvs := append([]*vars.Var(nil), lvs...)
+	for i, lv := range lvs {
+		newlvs := append([]*vars.Var(nil), bestlvs...)
+		for {
+			newlvs[i] = vars.New(lv.ID(), newlvs[i].NState()+1, "", true)
+			newct := createLKMStruct(newlvs, gs1, gs2, -1)
+			newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
+			newct.SetBIC(scores.ComputeBIC(newct, ds))
+			fmt.Printf("\tSI_seq: %v\n", newct.Nodes())
+			fmt.Printf("\tbic: %v\n", newct.BIC())
+			if newct.BIC() > ct.BIC() {
+				ct = newct
+				bestlvs[i] = newlvs[i]
+				fmt.Printf("\taccepted! (%v)\n", ct.BIC())
+			} else {
+				fmt.Printf("\tbreak! (%v)\n", ct.BIC())
+				break
+			}
+		}
+	}
+	return ct, bestlvs
 }
 
 // increase latent cardinality until bic stops increasing
@@ -52,10 +82,14 @@ func applyStateInsertion(ct *model.CTree, ds *data.Dataset, paramLearner emlearn
 	lvs vars.VarList, gs1, gs2 []vars.VarList) (*model.CTree, vars.VarList) {
 	for {
 		newct, newlvs := bestModelSI(ct, ds, paramLearner, lvs, gs1, gs2)
+		fmt.Printf("\tSI: %v\n", newct.Nodes())
+		fmt.Printf("\tbic: %v\n", newct.BIC())
 		if newct.BIC()-ct.BIC() > BicThreshold {
 			ct = newct
 			lvs = newlvs
+			fmt.Printf("\taccepted! (%v)\n", ct.BIC())
 		} else {
+			fmt.Printf("\tbreak! (%v)\n", ct.BIC())
 			break
 		}
 	}
@@ -67,11 +101,19 @@ func applyNodeRelocation(ct *model.CTree, ds *data.Dataset, paramLearner emlearn
 	lvs vars.VarList, gs1, gs2 []vars.VarList) (*model.CTree, []vars.VarList, []vars.VarList) {
 	for {
 		newct, reloc := bestModelNR(ct, ds, paramLearner, lvs, gs1, gs2)
+		if newct != nil {
+			fmt.Printf("\tNR: %v\n", newct.Nodes())
+			fmt.Printf("\tbic: %v\n", newct.BIC())
+		} else {
+			fmt.Printf("\tNR: nil\n")
+		}
 		if newct != nil && newct.BIC()-ct.BIC() > BicThreshold {
 			ct = newct
 			gs2 = append(gs2, gs1[reloc])
 			gs1 = append(gs1[:reloc], gs1[reloc+1:]...)
+			fmt.Printf("\taccepted! (%v)\n", ct.BIC())
 		} else {
+			fmt.Printf("\tbreak! (%v)\n", ct.BIC())
 			break
 		}
 	}
@@ -91,9 +133,12 @@ func bestModelSI(ct *model.CTree, ds *data.Dataset, paramLearner emlearner.EMLea
 		newct := createLKMStruct(newlvs, gs1, gs2, -1)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
 		newct.SetBIC(scores.ComputeBIC(newct, ds))
+		fmt.Printf("\t\tbestSI: %v\n", newct.Nodes())
+		fmt.Printf("\t\tbic: %v\n", newct.BIC())
 		if bestct == nil || newct.BIC() > bestct.BIC() {
 			bestct = newct
 			bestlvs = newlvs
+			fmt.Printf("\t\tbestStep (%v)\n", bestct.BIC())
 		}
 	}
 	return
@@ -110,9 +155,12 @@ func bestModelNR(ct *model.CTree, ds *data.Dataset, paramLearner emlearner.EMLea
 		newct := createLKMStruct(lvs, gs1, gs2, i)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
 		newct.SetBIC(scores.ComputeBIC(newct, ds))
+		fmt.Printf("\t\tbestNR: %v\n", newct.Nodes())
+		fmt.Printf("\t\tbic: %v\n", newct.BIC())
 		if bestct == nil || newct.BIC() > bestct.BIC() {
 			bestct = newct
 			reloc = i
+			fmt.Printf("\t\tbestStep (%v)\n", bestct.BIC())
 		}
 	}
 	return

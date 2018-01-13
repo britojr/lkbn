@@ -2,6 +2,7 @@ package learner
 
 import (
 	"fmt"
+	"log"
 	"math"
 
 	"github.com/britojr/btbn/scr"
@@ -19,6 +20,8 @@ import (
 type BridgeSearch struct {
 	*common              // common variables and methods
 	mutInfo *scr.MutInfo // pre-computed mutual information matrix
+
+	localLearner emlearner.EMLearner // local parameter learner
 }
 
 // NewCTBridgeSearch creates a instance of this stragegy
@@ -32,43 +35,41 @@ func (s *BridgeSearch) SetDataset(ds *data.Dataset) {
 	s.mutInfo = scr.ComputeMutInfDF(ds.DataFrame())
 }
 
+// SetFileParameters sets properties
+func (s *BridgeSearch) SetFileParameters(props map[string]string) {
+	s.common.SetFileParameters(props)
+	// use a copy of paramLearner with 'reuse' parm set to false
+	s.localLearner = emlearner.New()
+	s.localLearner.SetProperties(props)
+	s.localLearner.SetProperties(map[string]string{emlearner.ParmReuse: "false"})
+}
+
 // Search searches for a network structure
 func (s *BridgeSearch) Search() Solution {
 
-	fmt.Println("Grouping variables per mutual information")
+	log.Println("Grouping variables per mutual information")
 	gs := groupVariables(s.ds.Variables(), s.tw, s.mutInfo)
-	for i, g := range gs {
-		fmt.Printf("%v: %v\n", i, g)
-	}
-	fmt.Println("Computing mutual information per groups")
-	gpmi := computeGroupedMI(gs, s.mutInfo)
-	for i := range gpmi {
-		fmt.Printf("%v: %v\n", i, gpmi[i])
-	}
-	fmt.Println("Grouping the groups of variables")
-	// TODO: use a copy of paramLearner with 'reuse' parm set to false
-	cls := clusterGroups(gs, gpmi, s.ds, s.paramLearner)
-	for i := range cls {
-		fmt.Printf("%v: %v\n", i, cls[i])
-	}
 
-	// creates the latent variables of the model
-	lvs := make([]*vars.Var, len(cls))
-	subtrees := make([]*model.CTree, len(cls))
-	// creates a subtree for each cluster
-	for i, cl := range cls {
-		lvs[i] = vars.New(s.nv+i, 2, "", true)
-		subtrees[i], lvs[i] = lkm.LearnLKM1L(cl, lvs[i], s.ds, s.paramLearner)
-	}
-	// connects the subtrees
+	log.Println("Computing mutual information between groups")
+	gpmi := computeGroupedMI(gs, s.mutInfo)
+
+	log.Println("Creating clusters of groups")
+	cls := clusterGroups(gs, gpmi, s.ds, s.localLearner)
+
+	log.Println("Learning a subtree for each cluster")
+	lvs, subtrees := createSubtrees(cls, s.ds, s.localLearner)
+
+	log.Println("Connecting subtrees")
 	ct := buildConnectedTree(lvs, subtrees, s.ds)
-	// learn parameters of the full model
-	ct, _, _ = s.paramLearner.Run(ct, s.ds.IntMaps())
+
+	log.Println("Learning parameters for the full model")
+	ct, _, _ = s.localLearner.Run(ct, s.ds.IntMaps())
 	return ct
 }
 
 // splits varlist in groups of size k, grouping variables by highest MI
 func groupVariables(vs vars.VarList, k int, mutInfo *scr.MutInfo) (gs []vars.VarList) {
+	// create groups of size one, for k=1
 	if k < 2 {
 		for _, v := range vs {
 			gs = append(gs, []*vars.Var{v})
@@ -89,11 +90,12 @@ func groupVariables(vs vars.VarList, k int, mutInfo *scr.MutInfo) (gs []vars.Var
 			g.Add(x[1])
 			remain.Remove(x[1].ID())
 		}
+		gs = append(gs, g)
+		// if just one remais, creates a group of one
 		if len(remain) == 1 {
-			g.Add(remain[0])
+			gs = append(gs, []*vars.Var{remain[0]})
 			remain.Remove(remain[0].ID())
 		}
-		gs = append(gs, g)
 	}
 	return
 }
@@ -118,7 +120,7 @@ func highestPair(vs vars.VarList, mutInfo *scr.MutInfo) vars.VarList {
 }
 
 // finds the highest mi scoring var with relation to another group of variables
-func highestToGroup(vs, ws vars.VarList, mutInfo *scr.MutInfo) (vars.VarList, float64) {
+func highestToGroup(vs, ws vars.VarList, mutInfo *scr.MutInfo) ([]*vars.Var, float64) {
 	maxMI := 0.0
 	xs := make([]*vars.Var, 2)
 	for _, v := range vs {
@@ -225,7 +227,7 @@ func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
 	return cls
 }
 
-func computeLatentPosts(subtrees []*model.CTree, ds *data.Dataset) map[int][]*factor.Factor {
+func computeAllLatentPosts(subtrees []*model.CTree, ds *data.Dataset) map[int][]*factor.Factor {
 	lvPosts := make(map[int][]*factor.Factor)
 	for _, st := range subtrees {
 		lvID := st.Root().Variables()[0].ID()
@@ -257,9 +259,23 @@ func computeLatentDist(x, y *vars.Var, ds *data.Dataset,
 	return lvsDist
 }
 
+func createSubtrees(cls [][]vars.VarList,
+	ds *data.Dataset, paramLearner emlearner.EMLearner) ([]*vars.Var, []*model.CTree) {
+	// creates the latent variables of the model
+	lvs := make([]*vars.Var, len(cls))
+	subtrees := make([]*model.CTree, len(cls))
+	n := len(ds.Variables())
+	// creates a subtree for each cluster
+	for i, cl := range cls {
+		lvs[i] = vars.New(n+i, 2, "", true)
+		subtrees[i], lvs[i] = lkm.LearnLKM1L(cl, lvs[i], ds, paramLearner)
+	}
+	return lvs, subtrees
+}
+
 func buildConnectedTree(lvs vars.VarList, subtrees []*model.CTree, ds *data.Dataset) *model.CTree {
 	fmt.Println("Connecting subtrees...")
-	lvPosts := computeLatentPosts(subtrees, ds)
+	lvPosts := computeAllLatentPosts(subtrees, ds)
 	// create edges for the full graph, with MI as weight
 	var edges []graph.WEdge
 	nodes := make([]int, len(lvs))

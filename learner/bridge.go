@@ -67,8 +67,12 @@ func (s *BridgeSearch) Search() Solution {
 	return ct
 }
 
+type mutInfCalc interface {
+	Get(i, j int) float64
+}
+
 // splits varlist in groups of size k, grouping variables by highest MI
-func groupVariables(vs vars.VarList, k int, mutInfo *scr.MutInfo) (gs []vars.VarList) {
+func groupVariables(vs vars.VarList, k int, mutInfo mutInfCalc) (gs []vars.VarList) {
 	// create groups of size one, for k=1
 	if k < 2 {
 		for _, v := range vs {
@@ -101,7 +105,7 @@ func groupVariables(vs vars.VarList, k int, mutInfo *scr.MutInfo) (gs []vars.Var
 }
 
 // finds the highest scoring pair of variables
-func highestPair(vs vars.VarList, mutInfo *scr.MutInfo) vars.VarList {
+func highestPair(vs vars.VarList, mutInfo mutInfCalc) vars.VarList {
 	if len(vs) < 2 {
 		panic("learner: not enough variables to compute highest MI pair")
 	}
@@ -120,7 +124,7 @@ func highestPair(vs vars.VarList, mutInfo *scr.MutInfo) vars.VarList {
 }
 
 // finds the highest mi scoring var with relation to another group of variables
-func highestToGroup(vs, ws vars.VarList, mutInfo *scr.MutInfo) ([]*vars.Var, float64) {
+func highestToGroup(vs, ws vars.VarList, mutInfo mutInfCalc) ([]*vars.Var, float64) {
 	maxMI := 0.0
 	xs := make([]*vars.Var, 2)
 	for _, v := range vs {
@@ -137,7 +141,7 @@ func highestToGroup(vs, ws vars.VarList, mutInfo *scr.MutInfo) ([]*vars.Var, flo
 }
 
 // computes mutual information between groups of variables
-func computeGroupedMI(gs []vars.VarList, mutInfo *scr.MutInfo) map[string]map[string]float64 {
+func computeGroupedMI(gs []vars.VarList, mutInfo mutInfCalc) map[string]map[string]float64 {
 	gpMI := make(map[string]map[string]float64)
 	for i := range gs {
 		gpki := groupKey(gs[i])

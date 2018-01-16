@@ -163,30 +163,22 @@ func groupKey(gp vars.VarList) string {
 
 func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
 	ds *data.Dataset, paramLearner emlearner.EMLearner) [][]vars.VarList {
-	fmt.Println("Finding clusters...")
 	nstates := 2
 	lvs := []*vars.Var{
 		vars.New(len(ds.Variables()), nstates, "", true),
 		vars.New(len(ds.Variables())+1, nstates, "", true),
 	}
 	cls := make([][]vars.VarList, 0)
+	var cl, cl1, cl2 []vars.VarList
 	for len(gs) > 0 {
-		cl := highestGroupPair(gs, gpMI)
-		for _, g := range cl {
-			groupRemove(&gs, g)
-		}
-		for {
-			if len(gs) == 0 {
-				break
-			}
-			cl2 := highestGroupToCluster(cl, gs, gpMI)
-			groupRemove(&gs, cl2[1])
-			cl1 := append([]vars.VarList(nil), cl...)
-			groupRemove(&cl1, cl2[0])
-			cl = append(cl, cl2[1])
+		cl = highestGroupPair(gs, gpMI)
+		groupRemove(&gs, cl...)
+		for len(gs) != 0 {
+			cl, cl1, cl2 = increaseCluster(cl, gs, gpMI)
 			ct1L, _ := lkm.LearnLKM1L(cl, lvs[0], ds, paramLearner)
 			ct2L, _, gs1, gs2 := lkm.LearnLKM2L(lvs, cl1, cl2, ds, paramLearner)
-			fmt.Println("-----------------------------------")
+
+			fmt.Println("-----------------------------------------------------")
 			fmt.Printf("b1: %v\tb2: %v\n", ct1L.BIC(), ct2L.BIC())
 			fmt.Printf("cl:\n%v(%v)\n", cl, len(cl))
 			fmt.Printf("cl1:\n%v(%v)\n", cl1, len(cl1))
@@ -197,21 +189,7 @@ func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
 			fmt.Println()
 
 			if ct2L.BIC()-ct1L.BIC() > lkm.BicThreshold {
-				// if fails the test, should keep the group that contains the highest pair
-				if groupContains(gs1, cl[0]) {
-					if groupContains(gs1, cl[1]) {
-						cl = gs1
-						gs = append(gs, gs2...)
-						break
-					}
-				} else {
-					if groupContains(gs2, cl[1]) {
-						cl = gs2
-						gs = append(gs, gs1...)
-						break
-					}
-				}
-				if len(gs1) > len(gs2) {
+				if chooseGroupOne(cl, gs1, gs2) {
 					cl = gs1
 					gs = append(gs, gs2...)
 				} else {
@@ -231,36 +209,93 @@ func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
 	return cls
 }
 
-func computeAllLatentPosts(subtrees []*model.CTree, ds *data.Dataset) map[int][]*factor.Factor {
-	lvPosts := make(map[int][]*factor.Factor)
-	for _, st := range subtrees {
-		lvID := st.Root().Variables()[0].ID()
-		lvPosts[lvID] = computeLatentPosterior(st, ds)
-	}
-	return lvPosts
+// adds one variable to cluster cl
+// returns cl and its two partitions:
+// 		- cl2 contains the highest pair between cl and gs
+// 		- cl1 the remaining variables already in cl
+func increaseCluster(cl, gs []vars.VarList,
+	gpMI map[string]map[string]float64) ([]vars.VarList, []vars.VarList, []vars.VarList) {
+	cl2 := highestGroupToCluster(cl, gs, gpMI)
+	groupRemove(&gs, cl2[1])
+	cl1 := append([]vars.VarList(nil), cl...)
+	groupRemove(&cl1, cl2[0])
+	cl = append(cl, cl2[1])
+	return cl, cl1, cl2
 }
 
-// computes the posterior distribution of the latent variable for each line of the dataset
-func computeLatentPosterior(subtree *model.CTree, ds *data.Dataset) []*factor.Factor {
-	lvPost := make([]*factor.Factor, len(ds.IntMaps()))
-	infalg := inference.NewCTreeCalibration(subtree)
-	for i, evid := range ds.IntMaps() {
-		infalg.Run(evid)
-		lvPost[i] = infalg.CTree().Root().Potential().Copy()
+// returns true for choosing the group one, and false otherwise
+// if fails the test, should choose the group that contains the initial highest pair
+// in case the pair was split, should choose the highest group
+func chooseGroupOne(cl, gs1, gs2 []vars.VarList) bool {
+	if groupContains(gs1, cl[0]) {
+		if groupContains(gs1, cl[1]) {
+			return true
+		}
+	} else {
+		if groupContains(gs2, cl[1]) {
+			return false
+		}
 	}
-	return lvPost
+	if len(gs1) > len(gs2) {
+		return true
+	}
+	return false
 }
 
-// computes joint distribution of two latent variables based on their posterior distributions
-func computeLatentDist(x, y *vars.Var, ds *data.Dataset,
-	lvPosts map[int][]*factor.Factor) *factor.Factor {
-	// P(x, y|d) = P(x|d) * P(y|d)
-	lvsDist := lvPosts[x.ID()][0].Copy().Times(lvPosts[y.ID()][0])
-	for i := 1; i < len(ds.IntMaps()); i++ {
-		lvsDist.Plus(lvPosts[x.ID()][i].Copy().Times(lvPosts[y.ID()][i]))
+// finds the highest scoring pair of groups
+func highestGroupPair(gs []vars.VarList, gpMI map[string]map[string]float64) []vars.VarList {
+	maxMI := 0.0
+	xs := make([]vars.VarList, 2)
+	for i, v := range gs {
+		gpki := groupKey(v)
+		for _, w := range gs[:i] {
+			gpkj := groupKey(w)
+			mi := gpMI[gpki][gpkj]
+			if mi > maxMI {
+				maxMI = mi
+				xs[0], xs[1] = v, w
+			}
+		}
 	}
-	lvsDist.Normalize()
-	return lvsDist
+	return xs
+}
+
+// finds the highest mi scoring pair of groups between two distinct group lists
+func highestGroupToCluster(vs, ws []vars.VarList, gpMI map[string]map[string]float64) []vars.VarList {
+	maxMI := 0.0
+	xs := make([]vars.VarList, 2)
+	for _, v := range vs {
+		gpki := groupKey(v)
+		for _, w := range ws {
+			gpkj := groupKey(w)
+			mi := gpMI[gpki][gpkj]
+			if mi > maxMI {
+				maxMI = mi
+				xs[0], xs[1] = v, w
+			}
+		}
+	}
+	return xs
+}
+
+func groupRemove(gs *[]vars.VarList, gv ...vars.VarList) {
+	for _, g := range gv {
+		for i, v := range *gs {
+			if g.Equal(v) {
+				(*gs) = append((*gs)[:i], (*gs)[i+1:]...)
+				break
+			}
+		}
+	}
+}
+
+func groupContains(gs []vars.VarList, g vars.VarList) bool {
+	for _, v := range gs {
+		if g.Equal(v) {
+			return true
+		}
+	}
+	return false
 }
 
 func createSubtrees(cls [][]vars.VarList,
@@ -314,6 +349,38 @@ func buildConnectedTree(lvs vars.VarList, subtrees []*model.CTree, ds *data.Data
 	return ct
 }
 
+func computeAllLatentPosts(subtrees []*model.CTree, ds *data.Dataset) map[int][]*factor.Factor {
+	lvPosts := make(map[int][]*factor.Factor)
+	for _, st := range subtrees {
+		lvID := st.Root().Variables()[0].ID()
+		lvPosts[lvID] = computeLatentPosterior(st, ds)
+	}
+	return lvPosts
+}
+
+// computes the posterior distribution of the latent variable for each line of the dataset
+func computeLatentPosterior(subtree *model.CTree, ds *data.Dataset) []*factor.Factor {
+	lvPost := make([]*factor.Factor, len(ds.IntMaps()))
+	infalg := inference.NewCTreeCalibration(subtree)
+	for i, evid := range ds.IntMaps() {
+		infalg.Run(evid)
+		lvPost[i] = infalg.CTree().Root().Potential().Copy()
+	}
+	return lvPost
+}
+
+// computes joint distribution of two latent variables based on their posterior distributions
+func computeLatentDist(x, y *vars.Var, ds *data.Dataset,
+	lvPosts map[int][]*factor.Factor) *factor.Factor {
+	// P(x, y|d) = P(x|d) * P(y|d)
+	lvsDist := lvPosts[x.ID()][0].Copy().Times(lvPosts[y.ID()][0])
+	for i := 1; i < len(ds.IntMaps()); i++ {
+		lvsDist.Plus(lvPosts[x.ID()][i].Copy().Times(lvPosts[y.ID()][i]))
+	}
+	lvsDist.Normalize()
+	return lvsDist
+}
+
 func computePairwiseMI(f *factor.Factor) (mi float64) {
 	// marginals
 	fx := f.Copy().SumOut(f.Variables()[0]).Values()
@@ -330,58 +397,4 @@ func computePairwiseMI(f *factor.Factor) (mi float64) {
 		}
 	}
 	return
-}
-
-// finds the highest scoring pair of groups
-func highestGroupPair(gs []vars.VarList, gpMI map[string]map[string]float64) []vars.VarList {
-	maxMI := 0.0
-	xs := make([]vars.VarList, 2)
-	for i, v := range gs {
-		gpki := groupKey(v)
-		for _, w := range gs[:i] {
-			gpkj := groupKey(w)
-			mi := gpMI[gpki][gpkj]
-			if mi > maxMI {
-				maxMI = mi
-				xs[0], xs[1] = v, w
-			}
-		}
-	}
-	return xs
-}
-
-// finds the highest mi scoring pair of groups between two distinct group lists
-func highestGroupToCluster(vs, ws []vars.VarList, gpMI map[string]map[string]float64) []vars.VarList {
-	maxMI := 0.0
-	xs := make([]vars.VarList, 2)
-	for _, v := range vs {
-		gpki := groupKey(v)
-		for _, w := range ws {
-			gpkj := groupKey(w)
-			mi := gpMI[gpki][gpkj]
-			if mi > maxMI {
-				maxMI = mi
-				xs[0], xs[1] = v, w
-			}
-		}
-	}
-	return xs
-}
-
-func groupRemove(gs *[]vars.VarList, g vars.VarList) {
-	for i, v := range *gs {
-		if g.Equal(v) {
-			(*gs) = append((*gs)[:i], (*gs)[i+1:]...)
-			break
-		}
-	}
-}
-
-func groupContains(gs []vars.VarList, g vars.VarList) bool {
-	for _, v := range gs {
-		if g.Equal(v) {
-			return true
-		}
-	}
-	return false
 }

@@ -70,3 +70,45 @@ func TestGroupVariables(t *testing.T) {
 		}
 	}
 }
+
+func TestComputeGroupedMI(t *testing.T) {
+	cases := []struct {
+		mutInfo mutInfCalc
+		gs      []vars.VarList
+		want    map[string]map[string]float64
+	}{{
+		fakeMICalc{[][]float64{
+			{100},
+			{99, 100},
+			{1, 1, 100},
+			{1, 20, 98, 100},
+			{1, 1, 1, 21, 100},
+			{1, 1, 1, 10, 97, 100},
+			{1, 10, 94, 93, 1, 1, 100},
+			{96, 95, 1, 1, 1, 22, 1, 100},
+		}},
+		[]vars.VarList{
+			vars.NewList([]int{0, 1, 7}, nil), vars.NewList([]int{2, 3, 6}, nil),
+			vars.NewList([]int{4, 5}, nil),
+		}, map[string]map[string]float64{
+			"X0[2] X1[2] X7[2]": {
+				"X2[2] X3[2] X6[2]": 20,
+				"X4[2] X5[2]":       22,
+			},
+			"X2[2] X3[2] X6[2]": {
+				"X0[2] X1[2] X7[2]": 20,
+				"X4[2] X5[2]":       21,
+			},
+			"X4[2] X5[2]": {
+				"X0[2] X1[2] X7[2]": 22,
+				"X2[2] X3[2] X6[2]": 21,
+			},
+		},
+	}}
+	for _, tt := range cases {
+		got := computeGroupedMI(tt.gs, tt.mutInfo)
+		if !reflect.DeepEqual(tt.want, got) {
+			t.Errorf("wrong gropMI,  want:\n%v\ngot:\n%v\n", tt.want, got)
+		}
+	}
+}

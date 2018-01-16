@@ -13,6 +13,7 @@ import (
 	"github.com/britojr/lkbn/inference"
 	"github.com/britojr/lkbn/learner/lkm"
 	"github.com/britojr/lkbn/model"
+	"github.com/britojr/lkbn/scores"
 	"github.com/britojr/lkbn/vars"
 )
 
@@ -64,6 +65,9 @@ func (s *BridgeSearch) Search() Solution {
 
 	log.Println("Learning parameters for the full model")
 	ct, _, _ = s.localLearner.Run(ct, s.ds.IntMaps())
+
+	ct.SetBIC(scores.ComputeBIC(ct, s.ds))
+	log.Printf("BIC: %v\n", ct.BIC())
 	return ct
 }
 

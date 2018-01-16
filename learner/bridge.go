@@ -315,9 +315,17 @@ func createSubtrees(cls [][]vars.VarList,
 }
 
 func buildConnectedTree(lvs vars.VarList, subtrees []*model.CTree, ds *data.Dataset) *model.CTree {
-	fmt.Println("Connecting subtrees...")
+	nodes, edges := createFullGraph(lvs, subtrees, ds)
+	// select the edges corresponding to a Max Spanning Tree on the latent variables
+	// and order them in bfs order starting from root
+	edges = graph.RootedTree(0, graph.MaxSpanningTree(nodes, edges))
+	ct := connectSubtrees(edges, subtrees)
+	return ct
+}
+
+// create a full graph, with MI as weight
+func createFullGraph(lvs vars.VarList, subtrees []*model.CTree, ds *data.Dataset) ([]int, []graph.WEdge) {
 	lvPosts := computeAllLatentPosts(subtrees, ds)
-	// create edges for the full graph, with MI as weight
 	var edges []graph.WEdge
 	nodes := make([]int, len(lvs))
 	for i := range lvs {
@@ -330,17 +338,18 @@ func buildConnectedTree(lvs vars.VarList, subtrees []*model.CTree, ds *data.Data
 			})
 		}
 	}
-	// select the edges corresponding to a Max Spanning Tree on the latent variables
-	edges = graph.MaxSpanningTree(nodes, edges)
-	// order edges accoding to root
-	edges = graph.RootedTree(0, edges)
-	// connect the subtrees using the first one as root
+	return nodes, edges
+}
+
+// connect the subtrees using the first one as root
+func connectSubtrees(edges []graph.WEdge, subtrees []*model.CTree) *model.CTree {
 	for _, e := range edges {
 		i, j := e.Head, e.Tail
 		subtrees[i].Root().AddChildren(subtrees[j].Root())
 		// add the parent variable to the child clique
 		pi := subtrees[i].Root().Potential()
 		pj := subtrees[j].Root().Potential()
+
 		fmt.Printf("before:\n%v\n%v\n", pi.Variables(), pj.Variables())
 		subtrees[j].Root().SetPotential(factor.New(pj.Variables().Union(pi.Variables())...))
 		fmt.Printf("after:\n%v\n%v\n", pi.Variables(), pj.Variables())

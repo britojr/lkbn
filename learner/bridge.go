@@ -169,12 +169,15 @@ func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
 		vars.New(len(ds.Variables())+1, nstates, "", true),
 	}
 	cls := make([][]vars.VarList, 0)
-	var cl, cl1, cl2 []vars.VarList
 	for len(gs) > 0 {
-		cl = highestGroupPair(gs, gpMI)
+		cl := highestGroupPair(gs, gpMI)
 		groupRemove(&gs, cl...)
 		for len(gs) != 0 {
-			cl, cl1, cl2 = increaseCluster(cl, gs, gpMI)
+			cl1, cl2 := increaseCluster(&cl, &gs, gpMI)
+			if len(cl) < 4 {
+				// can't improve much by spliting a group of size lesser than 4
+				continue
+			}
 			ct1L, _ := lkm.LearnLKM1L(cl, lvs[0], ds, paramLearner)
 			ct2L, _, gs1, gs2 := lkm.LearnLKM2L(lvs, cl1, cl2, ds, paramLearner)
 
@@ -209,18 +212,17 @@ func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
 	return cls
 }
 
-// adds one variable to cluster cl
-// returns cl and its two partitions:
+// adds one variable to cluster cl, returns cl and its two partitions:
 // 		- cl2 contains the highest pair between cl and gs
 // 		- cl1 the remaining variables already in cl
-func increaseCluster(cl, gs []vars.VarList,
-	gpMI map[string]map[string]float64) ([]vars.VarList, []vars.VarList, []vars.VarList) {
-	cl2 := highestGroupToCluster(cl, gs, gpMI)
-	groupRemove(&gs, cl2[1])
-	cl1 := append([]vars.VarList(nil), cl...)
+func increaseCluster(cl, gs *[]vars.VarList,
+	gpMI map[string]map[string]float64) (cl1, cl2 []vars.VarList) {
+	cl2 = highestGroupToCluster(*cl, *gs, gpMI)
+	groupRemove(gs, cl2[1])
+	cl1 = append([]vars.VarList(nil), *cl...)
 	groupRemove(&cl1, cl2[0])
-	cl = append(cl, cl2[1])
-	return cl, cl1, cl2
+	*cl = append(*cl, cl2[1])
+	return
 }
 
 // returns true for choosing the group one, and false otherwise

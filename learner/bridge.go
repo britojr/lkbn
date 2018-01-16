@@ -347,13 +347,13 @@ func connectSubtrees(edges []graph.WEdge, subtrees []*model.CTree) *model.CTree 
 		i, j := e.Head, e.Tail
 		subtrees[i].Root().AddChildren(subtrees[j].Root())
 		// add the parent variable to the child clique
-		pi := subtrees[i].Root().Potential()
-		pj := subtrees[j].Root().Potential()
-
-		fmt.Printf("before:\n%v\n%v\n", pi.Variables(), pj.Variables())
-		subtrees[j].Root().SetPotential(factor.New(pj.Variables().Union(pi.Variables())...))
-		fmt.Printf("after:\n%v\n%v\n", pi.Variables(), pj.Variables())
-		fmt.Printf("subtree:\n%v\n", subtrees[j].Root().Variables())
+		vi := subtrees[i].Root().Variables()
+		vj := subtrees[j].Root().Variables()
+		if subtrees[i].Root().Parent() != nil {
+			vi = vi.Diff(subtrees[i].Root().Parent().Variables())
+		}
+		newScope := vj.Union(vi)
+		subtrees[j].Root().SetPotential(factor.New(newScope...))
 	}
 	ct := subtrees[0]
 	ct.BfsNodes()

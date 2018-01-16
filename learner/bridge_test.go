@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/britojr/lkbn/graph"
+	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
 )
 
@@ -192,6 +194,106 @@ func TestChooseGroupOne(t *testing.T) {
 		got := chooseGroupOne(tt.cl, tt.gs1, tt.gs2)
 		if got != tt.want {
 			t.Errorf("wrong choice, want:%v got: %v\n", tt.want, got)
+		}
+	}
+}
+
+func TestConnectSubtrees(t *testing.T) {
+	varStr := `
+variables:
+- {name: X0,  card: 2}
+- {name: X1,  card: 2}
+- {name: X2,  card: 2}
+- {name: X3,  card: 2}
+- {name: X4,  card: 2}
+- {name: X5,  card: 2}
+- {name: X6,  card: 2}
+- {name: X7,  card: 2}
+- {name: X8,  card: 2}
+- {name: Y0,  card: 3, latent: true}
+- {name: Y1,  card: 4, latent: true}
+- {name: Y2,  card: 2, latent: true}
+- {name: Y3,  card: 2, latent: true}
+`
+	subtreeStr := []string{
+		varStr + `
+nodes:
+- clqvars: [Y0]
+- clqvars: [X0, Y0]
+  parent: [Y0]
+- clqvars: [X1, Y0]
+  parent: [Y0]
+`, varStr + `
+nodes:
+- clqvars: [Y1]
+- clqvars: [X2, Y1]
+  parent: [Y1]
+- clqvars: [X3, X4, Y1]
+  parent: [Y1]
+`, varStr + `
+nodes:
+- clqvars: [Y2]
+- clqvars: [X5, Y2]
+  parent: [Y2]
+- clqvars: [X6, Y2]
+  parent: [Y2]
+`, varStr + `
+nodes:
+- clqvars: [Y3]
+- clqvars: [X7, Y3]
+  parent: [Y3]
+- clqvars: [X8, Y3]
+  parent: [Y3]
+`,
+	}
+	treeStr := varStr + `
+nodes:
+- clqvars: [Y0]
+- clqvars: [X0, Y0]
+  parent: [Y0]
+- clqvars: [X1, Y0]
+  parent: [Y0]
+
+- clqvars: [Y0,Y3]
+  parent: [Y0]
+- clqvars: [X7, Y3]
+  parent: [Y0,Y3]
+- clqvars: [X8, Y3]
+  parent: [Y0,Y3]
+
+- clqvars: [Y1,Y3]
+  parent: [Y0,Y3]
+- clqvars: [X2, Y1]
+  parent: [Y1,Y3]
+- clqvars: [X3, X4, Y1]
+  parent: [Y1,Y3]
+
+- clqvars: [Y2,Y3]
+  parent: [Y0,Y3]
+- clqvars: [X5, Y2]
+  parent: [Y2,Y3]
+- clqvars: [X6, Y2]
+  parent: [Y2,Y3]
+`
+	var subtrees []*model.CTree
+	for _, str := range subtreeStr {
+		subtrees = append(subtrees, model.CTreeFromString(str))
+	}
+	ct := model.CTreeFromString(treeStr)
+	edges := []graph.WEdge{
+		{Head: 0, Tail: 3},
+		{Head: 3, Tail: 1},
+		{Head: 3, Tail: 2},
+	}
+	cases := []struct {
+		edges    []graph.WEdge
+		subtrees []*model.CTree
+		ct       *model.CTree
+	}{{edges, subtrees, ct}}
+	for _, tt := range cases {
+		got := connectSubtrees(tt.edges, tt.subtrees)
+		if !got.EqualStruct(tt.ct) {
+			t.Errorf("wrong structure, want:\n%v\ngot:\n%v\n", tt.ct, got)
 		}
 	}
 }

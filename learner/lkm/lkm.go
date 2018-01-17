@@ -20,7 +20,7 @@ func LearnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
 	// create initial  structure
 	ct := createLKMStruct([]*vars.Var{lv}, gs, nil, -1)
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
-	ct.SetBIC(scores.ComputeBIC(ct, ds))
+	ct.SetBIC(scores.ComputeBIC(ct, ds.IntMaps()))
 	lvs := []*vars.Var{lv}
 
 	fmt.Printf("LearnLKM1L\n")
@@ -37,7 +37,7 @@ func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 	// create initial structure and learn parameters
 	ct := createLKMStruct(lvs, gs1, gs2, -1)
 	ct, _, _ = paramLearner.Run(ct, ds.IntMaps())
-	ct.SetBIC(scores.ComputeBIC(ct, ds))
+	ct.SetBIC(scores.ComputeBIC(ct, ds.IntMaps()))
 
 	fmt.Printf("LearnLKM2L\n")
 	fmt.Printf("current: %v\n", ct.Nodes())
@@ -61,7 +61,7 @@ func applySeqStateInsertion(ct *model.CTree, ds *data.Dataset, paramLearner emle
 			newlvs[i] = vars.New(lv.ID(), newlvs[i].NState()+1, "", true)
 			newct := createLKMStruct(newlvs, gs1, gs2, -1)
 			newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
-			newct.SetBIC(scores.ComputeBIC(newct, ds))
+			newct.SetBIC(scores.ComputeBIC(newct, ds.IntMaps()))
 			fmt.Printf("\tSI_seq: %v\n", newct.Nodes())
 			fmt.Printf("\tbic: %v\n", newct.BIC())
 			if newct.BIC() > ct.BIC() {
@@ -132,7 +132,7 @@ func bestModelSI(ct *model.CTree, ds *data.Dataset, paramLearner emlearner.EMLea
 		newlvs[i] = vars.New(lv.ID(), newlvs[i].NState()+1, "", true)
 		newct := createLKMStruct(newlvs, gs1, gs2, -1)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
-		newct.SetBIC(scores.ComputeBIC(newct, ds))
+		newct.SetBIC(scores.ComputeBIC(newct, ds.IntMaps()))
 		fmt.Printf("\t\tbestSI: %v\n", newct.Nodes())
 		fmt.Printf("\t\tbic: %v\n", newct.BIC())
 		if bestct == nil || newct.BIC() > bestct.BIC() {
@@ -154,7 +154,7 @@ func bestModelNR(ct *model.CTree, ds *data.Dataset, paramLearner emlearner.EMLea
 	for i := range gs1 {
 		newct := createLKMStruct(lvs, gs1, gs2, i)
 		newct, _, _ = paramLearner.Run(newct, ds.IntMaps())
-		newct.SetBIC(scores.ComputeBIC(newct, ds))
+		newct.SetBIC(scores.ComputeBIC(newct, ds.IntMaps()))
 		fmt.Printf("\t\tbestNR: %v\n", newct.Nodes())
 		fmt.Printf("\t\tbic: %v\n", newct.BIC())
 		if bestct == nil || newct.BIC() > bestct.BIC() {

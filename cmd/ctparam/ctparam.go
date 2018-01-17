@@ -49,7 +49,7 @@ func main() {
 		start := time.Now()
 		ct, ll, it := eml.Run(ct, ds.IntMaps())
 		elapsed := time.Since(start)
-		ct.SetBIC(scores.ComputeBIC(ct, ds))
+		ct.SetBIC(scores.ComputeBIC(ct, ds.IntMaps()))
 
 		log.Printf("========== SOLUTION ==============================\n")
 		log.Printf("Structure: %v\n", ctFile)

@@ -3,15 +3,14 @@ package scores
 import (
 	"math"
 
-	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/model"
 )
 
 // ComputeBIC computes Bayesian Information Criterion:
 // 	BIC = LL - ( model_size * ln(N)/2 )
-func ComputeBIC(ct *model.CTree, ds *data.Dataset) float64 {
+func ComputeBIC(ct *model.CTree, intMaps []map[int]int) float64 {
 	modelsize := computeModelSize(ct)
-	return ct.Score() - float64(modelsize)*math.Log(float64(len(ds.IntMaps())))/2.0
+	return ct.Score() - float64(modelsize)*math.Log(float64(len(intMaps)))/2.0
 }
 
 func computeModelSize(ct *model.CTree) (modelsize int) {

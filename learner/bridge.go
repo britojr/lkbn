@@ -66,7 +66,7 @@ func (s *BridgeSearch) Search() Solution {
 	log.Println("Learning parameters for the full model")
 	ct, _, _ = s.localLearner.Run(ct, s.ds.IntMaps())
 
-	ct.SetBIC(scores.ComputeBIC(ct, s.ds))
+	ct.SetBIC(scores.ComputeBIC(ct, s.ds.IntMaps()))
 	log.Printf("BIC: %v\n", ct.BIC())
 	return ct
 }

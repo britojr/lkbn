@@ -117,7 +117,7 @@ func runCTParamLearner() {
 	start := time.Now()
 	m, ll, it := eml.Run(ct, dataSet.IntMaps())
 	elapsed := time.Since(start)
-	m.SetBIC(scores.ComputeBIC(m, dataSet))
+	m.SetBIC(scores.ComputeBIC(m, dataSet.IntMaps()))
 
 	log.Printf("========== SOLUTION ==============================\n")
 	log.Printf("Time: %v\n", elapsed)

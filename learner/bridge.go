@@ -68,6 +68,7 @@ func (s *BridgeSearch) Search() Solution {
 
 	ct.SetBIC(scores.ComputeBIC(ct, s.ds.IntMaps()))
 	log.Printf("BIC: %v\n", ct.BIC())
+	fmt.Printf("Final:\n%v\n", ct.Nodes())
 	return ct
 }
 

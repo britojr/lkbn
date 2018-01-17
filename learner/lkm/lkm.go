@@ -3,7 +3,6 @@ package lkm
 import (
 	"fmt"
 
-	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/emlearner"
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/model"
@@ -14,8 +13,13 @@ import (
 // BicThreshold defines the minimum difference to accept a better bic score
 var BicThreshold = 0.1
 
+type dataset interface {
+	Variables() vars.VarList
+	IntMaps() []map[int]int
+}
+
 // LearnLKM1L creates a LKM model with one latent variable
-func LearnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
+func LearnLKM1L(gs []vars.VarList, lv *vars.Var, ds dataset,
 	paramLearner emlearner.EMLearner) (*model.CTree, *vars.Var) {
 	// create initial  structure
 	ct := createLKMStruct([]*vars.Var{lv}, gs, nil, -1)
@@ -32,7 +36,7 @@ func LearnLKM1L(gs []vars.VarList, lv *vars.Var, ds *data.Dataset,
 
 // LearnLKM2L creates a LKM model with two latent variables
 // as starting point, the first latent variable is parent of group 1 and the second of group 2
-func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
+func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds dataset,
 	paramLearner emlearner.EMLearner) (*model.CTree, vars.VarList, []vars.VarList, []vars.VarList) {
 	// create initial structure and learn parameters
 	ct := createLKMStruct(lvs, gs1, gs2, -1)
@@ -52,7 +56,7 @@ func LearnLKM2L(lvs vars.VarList, gs1, gs2 []vars.VarList, ds *data.Dataset,
 }
 
 // increase latent cardinality until bic stops increasing
-func applySeqStateInsertion(ct *model.CTree, ds *data.Dataset, paramLearner emlearner.EMLearner,
+func applySeqStateInsertion(ct *model.CTree, ds dataset, paramLearner emlearner.EMLearner,
 	lvs vars.VarList, gs1, gs2 []vars.VarList) (*model.CTree, vars.VarList) {
 	bestlvs := append([]*vars.Var(nil), lvs...)
 	for i, lv := range lvs {
@@ -78,7 +82,7 @@ func applySeqStateInsertion(ct *model.CTree, ds *data.Dataset, paramLearner emle
 }
 
 // increase latent cardinality until bic stops increasing
-func applyStateInsertion(ct *model.CTree, ds *data.Dataset, paramLearner emlearner.EMLearner,
+func applyStateInsertion(ct *model.CTree, ds dataset, paramLearner emlearner.EMLearner,
 	lvs vars.VarList, gs1, gs2 []vars.VarList) (*model.CTree, vars.VarList) {
 	for {
 		newct, newlvs := bestModelSI(ct, ds, paramLearner, lvs, gs1, gs2)
@@ -97,7 +101,7 @@ func applyStateInsertion(ct *model.CTree, ds *data.Dataset, paramLearner emlearn
 }
 
 // relocate nodes until bic stops increasing
-func applyNodeRelocation(ct *model.CTree, ds *data.Dataset, paramLearner emlearner.EMLearner,
+func applyNodeRelocation(ct *model.CTree, ds dataset, paramLearner emlearner.EMLearner,
 	lvs vars.VarList, gs1, gs2 []vars.VarList) (*model.CTree, []vars.VarList, []vars.VarList) {
 	for {
 		newct, reloc := bestModelNR(ct, ds, paramLearner, lvs, gs1, gs2)
@@ -120,7 +124,7 @@ func applyNodeRelocation(ct *model.CTree, ds *data.Dataset, paramLearner emlearn
 	return ct, gs1, gs2
 }
 
-func bestModelSI(ct *model.CTree, ds *data.Dataset, paramLearner emlearner.EMLearner,
+func bestModelSI(ct *model.CTree, ds dataset, paramLearner emlearner.EMLearner,
 	lvs vars.VarList, gs1, gs2 []vars.VarList) (bestct *model.CTree, bestlvs vars.VarList) {
 	// TODO: improve this with local EM
 	for i, lv := range lvs {
@@ -144,7 +148,7 @@ func bestModelSI(ct *model.CTree, ds *data.Dataset, paramLearner emlearner.EMLea
 	return
 }
 
-func bestModelNR(ct *model.CTree, ds *data.Dataset, paramLearner emlearner.EMLearner,
+func bestModelNR(ct *model.CTree, ds dataset, paramLearner emlearner.EMLearner,
 	lvs vars.VarList, gs1, gs2 []vars.VarList) (bestct *model.CTree, reloc int) {
 	// TODO: improve this with local EM
 	// ngs1, ngs2 := append([]*vars.Var(nil), gs1...), append([]*vars.Var(nil), gs2...)

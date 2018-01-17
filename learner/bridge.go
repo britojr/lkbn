@@ -74,6 +74,10 @@ func (s *BridgeSearch) Search() Solution {
 type mutInfCalc interface {
 	Get(i, j int) float64
 }
+type dataset interface {
+	Variables() vars.VarList
+	IntMaps() []map[int]int
+}
 
 // splits varlist in groups of size k, grouping variables by highest MI
 func groupVariables(vs vars.VarList, k int, mutInfo mutInfCalc) (gs []vars.VarList) {
@@ -166,7 +170,7 @@ func groupKey(gp vars.VarList) string {
 }
 
 func clusterGroups(gs []vars.VarList, gpMI map[string]map[string]float64,
-	ds *data.Dataset, paramLearner emlearner.EMLearner) [][]vars.VarList {
+	ds dataset, paramLearner emlearner.EMLearner) [][]vars.VarList {
 	nstates := 2
 	lvs := []*vars.Var{
 		vars.New(len(ds.Variables()), nstates, "", true),
@@ -305,7 +309,7 @@ func groupContains(gs []vars.VarList, g vars.VarList) bool {
 }
 
 func createSubtrees(cls [][]vars.VarList,
-	ds *data.Dataset, paramLearner emlearner.EMLearner) ([]*vars.Var, []*model.CTree) {
+	ds dataset, paramLearner emlearner.EMLearner) ([]*vars.Var, []*model.CTree) {
 	// creates the latent variables of the model
 	lvs := make([]*vars.Var, len(cls))
 	subtrees := make([]*model.CTree, len(cls))
@@ -318,7 +322,7 @@ func createSubtrees(cls [][]vars.VarList,
 	return lvs, subtrees
 }
 
-func buildConnectedTree(lvs vars.VarList, subtrees []*model.CTree, ds *data.Dataset) *model.CTree {
+func buildConnectedTree(lvs vars.VarList, subtrees []*model.CTree, ds dataset) *model.CTree {
 	nodes, edges := createFullGraph(lvs, subtrees, ds)
 	// select the edges corresponding to a Max Spanning Tree on the latent variables
 	// and order them in bfs order starting from root
@@ -328,7 +332,7 @@ func buildConnectedTree(lvs vars.VarList, subtrees []*model.CTree, ds *data.Data
 }
 
 // create a full graph, with MI as weight
-func createFullGraph(lvs vars.VarList, subtrees []*model.CTree, ds *data.Dataset) ([]int, []graph.WEdge) {
+func createFullGraph(lvs vars.VarList, subtrees []*model.CTree, ds dataset) ([]int, []graph.WEdge) {
 	lvPosts := computeAllLatentPosts(subtrees, ds)
 	var edges []graph.WEdge
 	nodes := make([]int, len(lvs))
@@ -364,7 +368,7 @@ func connectSubtrees(edges []graph.WEdge, subtrees []*model.CTree) *model.CTree 
 	return ct
 }
 
-func computeAllLatentPosts(subtrees []*model.CTree, ds *data.Dataset) map[int][]*factor.Factor {
+func computeAllLatentPosts(subtrees []*model.CTree, ds dataset) map[int][]*factor.Factor {
 	lvPosts := make(map[int][]*factor.Factor)
 	for _, st := range subtrees {
 		lvID := st.Root().Variables()[0].ID()
@@ -374,7 +378,7 @@ func computeAllLatentPosts(subtrees []*model.CTree, ds *data.Dataset) map[int][]
 }
 
 // computes the posterior distribution of the latent variable for each line of the dataset
-func computeLatentPosterior(subtree *model.CTree, ds *data.Dataset) []*factor.Factor {
+func computeLatentPosterior(subtree *model.CTree, ds dataset) []*factor.Factor {
 	lvPost := make([]*factor.Factor, len(ds.IntMaps()))
 	infalg := inference.NewCTreeCalibration(subtree)
 	for i, evid := range ds.IntMaps() {
@@ -385,7 +389,7 @@ func computeLatentPosterior(subtree *model.CTree, ds *data.Dataset) []*factor.Fa
 }
 
 // computes joint distribution of two latent variables based on their posterior distributions
-func computeLatentDist(x, y *vars.Var, ds *data.Dataset,
+func computeLatentDist(x, y *vars.Var, ds dataset,
 	lvPosts map[int][]*factor.Factor) *factor.Factor {
 	// P(x, y|d) = P(x|d) * P(y|d)
 	lvsDist := lvPosts[x.ID()][0].Copy().Times(lvPosts[y.ID()][0])

@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/britojr/lkbn/emlearner"
 	"github.com/britojr/lkbn/graph"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
@@ -294,6 +295,127 @@ nodes:
 		got := connectSubtrees(tt.edges, tt.subtrees)
 		if !got.EqualStruct(tt.ct) {
 			t.Errorf("wrong structure, want:\n%v\ngot:\n%v\n", tt.ct, got)
+		}
+	}
+}
+
+type fakeLearner struct{}
+
+func (f fakeLearner) SetProperties(props map[string]string) {}
+func (f fakeLearner) PrintProperties()                      {}
+func (f fakeLearner) Copy() emlearner.EMLearner             { return f }
+func (f fakeLearner) Run(m *model.CTree, evset []map[int]int) (*model.CTree, float64, int) {
+	m.SetScore(-1000)
+	return m, m.Score(), 1
+}
+
+type fakeData struct {
+	variables vars.VarList
+	intMaps   []map[int]int
+}
+
+func (f fakeData) IntMaps() []map[int]int  { return f.intMaps }
+func (f fakeData) Variables() vars.VarList { return f.variables }
+
+func TestCreateSubtrees(t *testing.T) {
+	varStr := `
+variables:
+- {name: X0,  card: 2}
+- {name: X1,  card: 2}
+- {name: X2,  card: 2}
+- {name: X3,  card: 2}
+- {name: X4,  card: 2}
+- {name: X5,  card: 2}
+- {name: X6,  card: 2}
+- {name: X7,  card: 2}
+- {name: X8,  card: 2}
+- {name: X9,  card: 2}
+- {name: X10,  card: 2}
+- {name: X11,  card: 2}
+- {name: Y0,  card: 3, latent: true}
+- {name: Y1,  card: 4, latent: true}
+- {name: Y2,  card: 2, latent: true}
+`
+	subtreeStr := []string{
+		varStr + `
+nodes:
+- clqvars: [Y0]
+- clqvars: [X0, X2, Y0]
+  parent: [Y0]
+- clqvars: [X4, X6, Y0]
+  parent: [Y0]
+`, varStr + `
+nodes:
+- clqvars: [Y1]
+- clqvars: [X1, X3, Y1]
+  parent: [Y1]
+- clqvars: [X5, X7, Y1]
+  parent: [Y1]
+- clqvars: [X8, X9, Y1]
+  parent: [Y1]
+`, varStr + `
+nodes:
+- clqvars: [Y2]
+- clqvars: [X10, X11, Y2]
+  parent: [Y2]
+`,
+	}
+	vs := vars.NewList([]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, nil)
+	lvs := []*vars.Var{
+		vars.New(12, 3, "Y0", true),
+		vars.New(13, 4, "Y1", true),
+		vars.New(14, 2, "Y2", true),
+	}
+	dsInts := [][]int{
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+	}
+	intMaps := make([]map[int]int, len(dsInts))
+	for i, line := range dsInts {
+		intMaps[i] = make(map[int]int)
+		for j, v := range line {
+			intMaps[i][j] = v
+		}
+	}
+	ds := fakeData{vs, intMaps}
+
+	cases := []struct {
+		cls          [][]vars.VarList
+		ds           dataset
+		paramLearner emlearner.EMLearner
+		lvs          vars.VarList
+		cts          []*model.CTree
+	}{{
+		cls: [][]vars.VarList{{
+			vars.NewList([]int{0, 2}, nil),
+			vars.NewList([]int{4, 6}, nil),
+		}, {
+			vars.NewList([]int{1, 3}, nil),
+			vars.NewList([]int{5, 7}, nil),
+			vars.NewList([]int{8, 9}, nil),
+		}, {
+			vars.NewList([]int{10, 11}, nil),
+		},
+		}, ds: ds, paramLearner: fakeLearner{},
+		lvs: lvs,
+		cts: []*model.CTree{
+			model.CTreeFromString(subtreeStr[0]),
+			model.CTreeFromString(subtreeStr[1]),
+			model.CTreeFromString(subtreeStr[2]),
+		},
+	}}
+	for _, tt := range cases {
+		gotVars, gotCt := createSubtrees(tt.cls, tt.ds, tt.paramLearner)
+		if !tt.lvs.Equal(gotVars) {
+			t.Errorf("wrong variables, want:\n%v\ngot:\n%v\n", tt.lvs, gotVars)
+		}
+		if len(tt.cts) != len(gotCt) {
+			t.Errorf("wrong number of subtrees, want: %v got: %v\n", len(tt.cts), len(gotCt))
+		}
+		for i, ct := range tt.cts {
+			if !ct.EqualStruct(gotCt[i]) {
+				t.Errorf("wrong structure, want:\n%v\ngot:\n%v\n", ct, gotCt[i])
+			}
 		}
 	}
 }

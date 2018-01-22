@@ -394,6 +394,21 @@ func (cn *CTNode) AddChildren(ch *CTNode) {
 	ch.parent = cn
 }
 
+// RemoveChildren removes children and update parent
+func (cn *CTNode) RemoveChildren(ch *CTNode) {
+	j := -1
+	for i, nd := range cn.children {
+		if nd == ch {
+			j = i
+			break
+		}
+	}
+	if j >= 0 {
+		cn.children = append(cn.children[:j], cn.children[j+1:]...)
+		ch.parent = nil
+	}
+}
+
 func (cn *CTNode) String() string {
 	return fmt.Sprint(cn.pot.Variables())
 }

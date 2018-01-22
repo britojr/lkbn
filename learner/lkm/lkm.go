@@ -183,19 +183,19 @@ func createLKMStruct(lvs []*vars.Var, gs1, gs2 []vars.VarList, reloc int) *model
 		}
 		nd := model.NewCTNode()
 		nd.SetPotential(factor.New(g.Union([]*vars.Var{lvs[0]})...))
-		root.AddChildren(nd)
+		root.AddChild(nd)
 		ct.AddNode(nd)
 	}
 	for _, g := range gs2 {
 		nd := model.NewCTNode()
 		nd.SetPotential(factor.New(g.Union([]*vars.Var{lvs[1]})...))
-		root.AddChildren(nd)
+		root.AddChild(nd)
 		ct.AddNode(nd)
 	}
 	if reloc >= 0 && reloc < len(gs1) {
 		nd := model.NewCTNode()
 		nd.SetPotential(factor.New(gs1[reloc].Union([]*vars.Var{lvs[1]})...))
-		root.AddChildren(nd)
+		root.AddChild(nd)
 		ct.AddNode(nd)
 	}
 	return ct

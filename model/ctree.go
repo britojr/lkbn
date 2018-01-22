@@ -388,14 +388,14 @@ func (cn *CTNode) Parent() *CTNode {
 	return cn.parent
 }
 
-// AddChildren add children and update parent
-func (cn *CTNode) AddChildren(ch *CTNode) {
+// AddChild add child node and updates parent
+func (cn *CTNode) AddChild(ch *CTNode) {
 	cn.children = append(cn.children, ch)
 	ch.parent = cn
 }
 
-// RemoveChildren removes children and update parent
-func (cn *CTNode) RemoveChildren(ch *CTNode) {
+// RemoveChild removes child node and updates parent
+func (cn *CTNode) RemoveChild(ch *CTNode) {
 	j := -1
 	for i, nd := range cn.children {
 		if nd == ch {

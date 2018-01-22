@@ -69,6 +69,30 @@ func TestEqual(t *testing.T) {
 	}
 }
 
+func TestContains(t *testing.T) {
+	cases := []struct {
+		va, vb VarList
+		result bool
+	}{
+		{[]*Var{}, []*Var{}, true},
+		{[]*Var(nil), []*Var(nil), true},
+		{[]*Var{New(0, 2, "", false), New(3, 2, "", false), New(5, 4, "", false)},
+			[]*Var{New(0, 2, "", false), New(3, 2, "", false), New(5, 4, "", false)}, true},
+		{[]*Var{New(5, 4, "", false)}, []*Var{New(5, 3, "", false)}, true},
+		{[]*Var{New(0, 2, "", false)}, []*Var{New(0, 2, "", false), New(1, 2, "", false)}, false},
+		{[]*Var{New(0, 2, "", false), New(2, 2, "", false)}, []*Var{New(0, 2, "", false), New(1, 2, "", false)}, false},
+		{NewList([]int{1, 2, 3, 4, 5}, nil), NewList([]int{2, 3, 5}, nil), true},
+		{NewList([]int{1, 2, 3, 4, 5}, nil), NewList([]int{2, 3, 5, 7}, nil), false},
+		{NewList([]int{2, 3, 4, 5}, nil), NewList([]int{1, 2, 3, 5}, nil), false},
+	}
+	for _, tt := range cases {
+		got := tt.va.Contains(tt.vb)
+		if tt.result != got {
+			t.Errorf("wrong compare result %v != %v\n%v << %v\n", tt.result, got, tt.va, tt.vb)
+		}
+	}
+}
+
 func TestNewList(t *testing.T) {
 	cases := []struct {
 		vs, ns []int

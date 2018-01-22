@@ -54,6 +54,21 @@ func (vl VarList) Equal(other VarList) bool {
 	return true
 }
 
+// Contains returns true if vl contains all elements present in other
+func (vl VarList) Contains(other VarList) bool {
+	if len(vl) < len(other) {
+		return false
+	}
+	j := 0
+	for _, v := range vl {
+		if j < len(other) && other[j].ID() == v.ID() {
+			j++
+			continue
+		}
+	}
+	return j == len(other)
+}
+
 // Diff returns new list with elements in vl and not in other
 func (vl VarList) Diff(other VarList) (w VarList) {
 	w = make([]*Var, 0, len(vl))

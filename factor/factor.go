@@ -50,6 +50,23 @@ func New(xs ...*vars.Var) (f *Factor) {
 	return
 }
 
+// NewZeroes creates a new factor and leaves values set to zeroes
+func NewZeroes(xs ...*vars.Var) (f *Factor) {
+	f = new(Factor)
+	f.vs = vars.VarList(xs).Copy()
+	f.values = make([]float64, f.vs.NStates())
+	return
+}
+
+// NewIndicator creates a new factor with just one state value set to one
+func NewIndicator(xs *vars.Var, state int) (f *Factor) {
+	f = new(Factor)
+	f.vs = []*vars.Var{xs}
+	f.values = make([]float64, f.vs.NStates())
+	f.values[state] = 1
+	return
+}
+
 // Copy returns a copy of f
 func (f *Factor) Copy() (g *Factor) {
 	g = new(Factor)

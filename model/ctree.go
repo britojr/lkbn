@@ -341,6 +341,16 @@ func (c *CTree) FindNode(vs vars.VarList) *CTNode {
 	return nil
 }
 
+// FindNodeContaining returns a node that contains the given variables
+func (c *CTree) FindNodeContaining(vs vars.VarList) *CTNode {
+	for _, nd := range c.nodes {
+		if nd.Variables().Contains(vs) {
+			return nd
+		}
+	}
+	return nil
+}
+
 // CTNode defines a clique tree node
 type CTNode struct {
 	children []*CTNode

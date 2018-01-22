@@ -66,6 +66,12 @@ func (s *BridgeSearch) Search() Solution {
 	log.Println("Learning parameters for the full model")
 	ct, _, _ = s.localLearner.Run(ct, s.ds.IntMaps())
 
+	log.Println("Refining model")
+	ct = refineModel(ct, cls, lvs, s.ds.IntMaps())
+
+	log.Println("Final model parameter learning")
+	ct, _, _ = s.localLearner.Run(ct, s.ds.IntMaps())
+
 	ct.SetBIC(scores.ComputeBIC(ct, s.ds.IntMaps()))
 	log.Printf("BIC: %v\n", ct.BIC())
 	fmt.Printf("Final:\n%v\n", ct.Nodes())
@@ -354,7 +360,7 @@ func createFullGraph(lvs vars.VarList, subtrees []*model.CTree, ds dataset) ([]i
 func connectSubtrees(edges []graph.WEdge, subtrees []*model.CTree) *model.CTree {
 	for _, e := range edges {
 		i, j := e.Head, e.Tail
-		subtrees[i].Root().AddChildren(subtrees[j].Root())
+		subtrees[i].Root().AddChild(subtrees[j].Root())
 		// add the parent variable to the child clique
 		vi := subtrees[i].Root().Variables()
 		vj := subtrees[j].Root().Variables()
@@ -414,6 +420,106 @@ func computePairwiseMI(f *factor.Factor) (mi float64) {
 			if pxy != 0 {
 				mi += pxy * math.Log(pxy/(px*py))
 			}
+		}
+	}
+	return
+}
+
+// checks if a group should be relocated to a different latent parent
+func refineModel(ct *model.CTree, cls [][]vars.VarList, lvs vars.VarList, intMaps []map[int]int) *model.CTree {
+	// compute the posteriors P(Y|d) of each latent variable in the model
+	lvPosts := make(map[int][]*factor.Factor)
+	for _, v := range lvs {
+		lvID := v.ID()
+		lvPosts[lvID] = computePosterior([]*vars.Var{v}, ct, intMaps)
+	}
+
+	// finds the closest latent variable for each clique of observed variables
+	closestVar := make(map[string]*vars.Var)
+	for j, gs := range cls {
+		for _, g := range gs {
+			maxMI := 0.0
+			for i, lv := range lvs {
+				mi := computeLatvarToGroupMI(g, lv, intMaps, lvPosts)
+				if mi > maxMI {
+					maxMI = mi
+					// if the highest mi is to the current parent, no change to be made
+					if j == i {
+						closestVar[groupKey(g)] = nil
+					} else {
+						closestVar[groupKey(g)] = lv
+					}
+				}
+			}
+		}
+	}
+
+	// find and relocate nodes
+	for _, nd := range ct.Nodes() {
+		var vs vars.VarList
+		for _, v := range nd.Variables() {
+			if !v.Latent() {
+				vs.Add(v)
+			}
+		}
+		lv, ok := closestVar[groupKey(vs)]
+		if !ok || lv == nil {
+			continue
+		}
+
+		// finds the highest node containing this latent variable
+		newPa := ct.FindNodeContaining([]*vars.Var{lv})
+		for newPa.Parent() != nil && newPa.Parent().Variables().Contains([]*vars.Var{lv}) {
+			newPa = newPa.Parent()
+		}
+		nd.Parent().RemoveChild(nd)
+		newPa.AddChild(nd)
+		vs.Add(lv)
+		nd.SetPotential(factor.New(vs...))
+	}
+
+	return ct
+}
+
+func computePosterior(vs vars.VarList, ct *model.CTree, intMaps []map[int]int) []*factor.Factor {
+	lvPost := make([]*factor.Factor, len(intMaps))
+	infalg := inference.NewCTreeCalibration(ct)
+	for i, evid := range intMaps {
+		infalg.Run(evid)
+		nd := infalg.CTree().FindNodeContaining(vs)
+		lvPost[i] = nd.Potential().Copy().Marginalize(vs...)
+	}
+	return lvPost
+}
+
+func computeDist(x, y *vars.Var, intMaps []map[int]int,
+	lvPosts map[int][]*factor.Factor) (dist *factor.Factor) {
+	// P(x, y|d) = P(x|d) * P(y|d)
+	dist = factor.NewZeroes(x, y)
+	for i, intMap := range intMaps {
+		var f *factor.Factor
+		if x.Latent() {
+			f = lvPosts[x.ID()][i].Copy()
+		} else {
+			f = factor.NewIndicator(x, intMap[x.ID()])
+		}
+		if y.Latent() {
+			f.Times(lvPosts[y.ID()][i])
+		} else {
+			f.Times(factor.NewIndicator(y, intMap[y.ID()]))
+		}
+		dist.Plus(f)
+	}
+	dist.Normalize()
+	return dist
+}
+
+func computeLatvarToGroupMI(g vars.VarList, lv *vars.Var,
+	intMaps []map[int]int, lvPosts map[int][]*factor.Factor) (maxMI float64) {
+	for _, v := range g {
+		mi := computePairwiseMI(computeDist(v, lv, intMaps, lvPosts))
+		if mi > maxMI {
+			maxMI = mi
 		}
 	}
 	return

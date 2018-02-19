@@ -3,6 +3,7 @@ package inference
 import (
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/model"
+	"github.com/britojr/lkbn/vars"
 	"gonum.org/v1/gonum/floats"
 )
 
@@ -12,6 +13,7 @@ type InfAlg interface {
 	CTNodes() []*model.CTNode
 	CalibPotential(nd *model.CTNode) *factor.Factor
 	CTree() *model.CTree
+	Posterior(vs vars.VarList, e map[int]int) *factor.Factor
 }
 
 type cTCalib struct {
@@ -23,6 +25,9 @@ type cTCalib struct {
 	send, receive map[*model.CTNode]*factor.Factor
 	// axiliar to reduce (memoize) number of factor multiplications
 	prev, post map[*model.CTNode][]*factor.Factor
+
+	// auxiliar list to preserve selected varibles for inference
+	preserveSet []*vars.Var
 }
 
 // NewCTreeCalibration creates a new clique tree calibration inference algorithm
@@ -65,6 +70,16 @@ func (c *cTCalib) Run(e map[int]int) float64 {
 	return floats.Sum(c.calibPot[c.ct.Root()].Values())
 }
 
+// Posterior performs inference and returns the posterior distribution of variables vs, given given evidence e
+func (c *cTCalib) Posterior(vs vars.VarList, e map[int]int) *factor.Factor {
+	c.preserveSet = vs
+	c.applyEvidence(e)
+	root := c.ct.Root()
+	c.upwardmessage(root, nil)
+	calibPot := c.prev[root][len(c.prev[root])-1].Copy()
+	return calibPot.Marginalize(vs...)
+}
+
 // applyEvidence initialize the potentials with a copy of the original potentials
 // applyed the given evidence
 func (c *cTCalib) applyEvidence(e map[int]int) {
@@ -102,7 +117,7 @@ func (c *cTCalib) upwardmessage(v, pa *model.CTNode) {
 		c.prev[v][i+1] = c.send[ch].Copy().Times(c.prev[v][i])
 	}
 	if pa != nil {
-		c.send[v] = c.prev[v][len(c.prev[v])-1].Copy().Marginalize(pa.Variables()...)
+		c.send[v] = c.prev[v][len(c.prev[v])-1].Copy().Marginalize(append(pa.Variables(), c.preserveSet...)...)
 	}
 }
 

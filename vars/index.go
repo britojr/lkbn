@@ -62,3 +62,21 @@ func (ix *Index) Next() bool {
 	}
 	return false
 }
+
+// NextRight iterates to next index value, from right to left
+// returns true if it found a valid index
+func (ix *Index) NextRight() bool {
+	if ix.current >= 0 {
+		for i := len(ix.attrb) - 1; i >= 0; i-- {
+			ix.current += ix.stride[i]
+			ix.attrb[i]++
+			if ix.attrb[i] < ix.vs[i].NState() {
+				return true
+			}
+			ix.current -= ix.stride[i] * ix.vs[i].NState()
+			ix.attrb[i] = 0
+		}
+		ix.current = -1
+	}
+	return false
+}

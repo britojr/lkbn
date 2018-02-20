@@ -26,12 +26,12 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
+	potentials := parseLTMbif(inFile)
+	ct := buildCTree(potentials)
+	ct.Write(outFile)
+}
 
-	// open files
-	fi := ioutl.OpenFile(inFile)
-	defer fi.Close()
-
-	// aux vars
+func parseLTMbif(fname string) []*factor.Factor {
 	var (
 		vs         vars.VarList
 		pots       []*factor.Factor
@@ -39,8 +39,9 @@ func main() {
 		w, name    string
 		latent     bool
 	)
+	fi := ioutl.OpenFile(fname)
+	defer fi.Close()
 
-	// parse
 	_, err := fmt.Fscanf(fi, "%s", &w)
 	for err != io.EOF {
 		if w == "variable" {
@@ -80,12 +81,19 @@ func main() {
 				values = append(values, conv.Atof(w))
 				fmt.Fscanf(fi, "%s", &w)
 			}
-			pots = append(pots, factor.New(clq...).SetValues(values))
+
+			// need to invert variable order
+			arranged := make([]float64, len(values))
+			ixf := vars.NewIndexFor(clq, clq)
+			for _, v := range values {
+				arranged[ixf.I()] = v
+				ixf.NextRight()
+			}
+			pots = append(pots, factor.New(clq...).SetValues(arranged))
 		}
 		_, err = fmt.Fscanf(fi, "%s", &w)
 	}
-	ct := buildCTree(pots)
-	ct.Write(outFile)
+	return pots
 }
 
 func findVar(vs vars.VarList, name string) (v *vars.Var) {

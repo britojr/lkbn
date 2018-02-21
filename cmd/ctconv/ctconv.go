@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/britojr/lkbn/factor"
@@ -33,11 +34,13 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
-	potentials := parseLTMbif(inFile)
+	potentials, _ := parseLTMbif(inFile)
+	ct := buildCTree(potentials)
 	switch convType {
 	case biToCtree:
-		ct := buildCTree(potentials)
 		ct.Write(outFile)
+	case biToBif:
+		writeBif(ct, outFile)
 	default:
 		fmt.Printf("\n error: invalid conversion option: (%v)\n\n", convType)
 		flag.PrintDefaults()
@@ -45,7 +48,60 @@ func main() {
 	}
 }
 
-func parseLTMbif(fname string) []*factor.Factor {
+func writeBif(ct *model.CTree, fname string) {
+	f := ioutl.CreateFile(fname)
+	defer f.Close()
+	fmt.Fprintf(f, "network unknown {}\n")
+	vs := ct.Variables()
+	for _, v := range vs {
+		fmt.Fprintf(f, "variable %v {\n", v.Name())
+		fmt.Fprintf(f, "  type discrete [ %v ] { %v };\n", v.NState(), strings.Join(varStates(v), ", "))
+		fmt.Fprintf(f, "}\n")
+	}
+	nds := ct.Nodes()
+	for _, nd := range nds {
+		if nd.Parent() != nil {
+			xvs := nd.Variables().Diff(nd.Parent().Variables())
+			pavs := nd.Variables().Intersec(nd.Parent().Variables())
+			fmt.Fprintf(f, "probability ( %v | %v ) {\n", strings.Join(varNames(xvs), ", "), strings.Join(varNames(pavs), ", "))
+
+			ixf := vars.NewIndexFor(xvs, xvs)
+			for !ixf.Ended() {
+				attrbMap := ixf.Attribution()
+				attrbStr := make([]string, 0, len(attrbMap))
+				for _, v := range xvs {
+					attrbStr = append(attrbStr, varStates(v)[attrbMap[v.ID()]])
+				}
+				p := nd.Potential().Copy()
+				p.Reduce(attrbMap).SumOut(xvs...)
+				tableInd := strings.Join(attrbStr, ", ")
+				tableVal := strings.Join(conv.Sftoa(p.Values()), ", ")
+				fmt.Fprintf(f, "  (%v) %v;\n", tableInd, tableVal)
+				ixf.Next()
+			}
+		} else {
+			fmt.Fprintf(f, "probability ( %v ) {\n", strings.Join(varNames(nd.Variables()), ", "))
+			fmt.Fprintf(f, "  table %v;\n", strings.Join(conv.Sftoa(nd.Potential().Values()), ", "))
+		}
+		fmt.Fprintf(f, "}\n")
+	}
+}
+
+func varStates(v *vars.Var) (s []string) {
+	for i := 0; i < v.NState(); i++ {
+		s = append(s, strconv.Itoa(i))
+	}
+	return
+}
+
+func varNames(vs vars.VarList) (s []string) {
+	for _, v := range vs {
+		s = append(s, v.Name())
+	}
+	return
+}
+
+func parseLTMbif(fname string) ([]*factor.Factor, vars.VarList) {
 	var (
 		vs         vars.VarList
 		pots       []*factor.Factor
@@ -107,7 +163,7 @@ func parseLTMbif(fname string) []*factor.Factor {
 		}
 		_, err = fmt.Fscanf(fi, "%s", &w)
 	}
-	return pots
+	return pots, vs
 }
 
 func findVar(vs vars.VarList, name string) (v *vars.Var) {

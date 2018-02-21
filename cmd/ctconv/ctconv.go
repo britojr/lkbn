@@ -14,21 +14,35 @@ import (
 	"github.com/britojr/utl/ioutl"
 )
 
+// conversion types
+const (
+	biToCtree = "bi-ctree"
+	biToBif   = "bi-bif"
+)
+
 // converts an LTM in bif format to ctree format
 func main() {
-	var inFile, outFile string
+	var inFile, outFile, convType string
 	flag.StringVar(&inFile, "i", "", "input file")
 	flag.StringVar(&outFile, "o", "", "output file")
-
+	flag.StringVar(&convType, "t", biToCtree, "conversion type ("+strings.Join([]string{biToCtree, biToBif}, "|")+")")
 	flag.Parse()
+
 	if len(inFile) == 0 || len(outFile) == 0 {
 		fmt.Printf("\n error: missing input/output file name\n\n")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
 	potentials := parseLTMbif(inFile)
-	ct := buildCTree(potentials)
-	ct.Write(outFile)
+	switch convType {
+	case biToCtree:
+		ct := buildCTree(potentials)
+		ct.Write(outFile)
+	default:
+		fmt.Printf("\n error: invalid conversion option: (%v)\n\n", convType)
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
 }
 
 func parseLTMbif(fname string) []*factor.Factor {

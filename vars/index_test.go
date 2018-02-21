@@ -1,6 +1,9 @@
 package vars
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestNewIndexFor(t *testing.T) {
 	cases := []struct {
@@ -72,6 +75,34 @@ func TestNextRight(t *testing.T) {
 				t.Errorf("wrong RESET index i[%v]=%v, should be i[%v]%v", i, ix.I(), i, tt.seq[i])
 			}
 			ix.NextRight()
+		}
+	}
+}
+
+func TestAttribution(t *testing.T) {
+	cases := []struct {
+		indexVars, forVars VarList
+		attrbMaps          []map[int]int
+	}{{
+		NewList([]int{0, 2}, []int{2, 3}),
+		NewList([]int{0, 2}, []int{2, 3}),
+		[]map[int]int{
+			map[int]int{0: 0, 2: 0},
+			map[int]int{0: 1, 2: 0},
+			map[int]int{0: 0, 2: 1},
+			map[int]int{0: 1, 2: 1},
+			map[int]int{0: 0, 2: 2},
+			map[int]int{0: 1, 2: 2},
+		},
+	}}
+	for _, tt := range cases {
+		ix := NewIndexFor(tt.indexVars, tt.forVars)
+		for i, m := range tt.attrbMaps {
+			got := ix.Attribution()
+			if !reflect.DeepEqual(got, m) {
+				t.Errorf("wrong attribution map i[%v]=%v, should be %v", i, got, m)
+			}
+			ix.Next()
 		}
 	}
 }

@@ -32,6 +32,15 @@ func (ix *Index) I() int {
 	return ix.current
 }
 
+// Attribution returns the current attribution map
+func (ix *Index) Attribution() map[int]int {
+	m := make(map[int]int)
+	for i, v := range ix.vs {
+		m[v.ID()] = ix.attrb[i]
+	}
+	return m
+}
+
 // Ended if index reached end value
 func (ix *Index) Ended() bool {
 	return ix.current < 0

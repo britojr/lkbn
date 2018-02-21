@@ -106,3 +106,56 @@ func TestAttribution(t *testing.T) {
 		}
 	}
 }
+
+func TestNewOrderedIndex(t *testing.T) {
+	cases := []struct {
+		forVars   []*Var
+		attrbMaps []map[int]int
+	}{{
+		[]*Var{New(0, 2, "", false), New(2, 3, "", false)},
+		[]map[int]int{
+			map[int]int{0: 0, 2: 0},
+			map[int]int{0: 1, 2: 0},
+			map[int]int{0: 0, 2: 1},
+			map[int]int{0: 1, 2: 1},
+			map[int]int{0: 0, 2: 2},
+			map[int]int{0: 1, 2: 2},
+		},
+	}, {
+		[]*Var{New(2, 3, "", false), New(0, 2, "", false)},
+		[]map[int]int{
+			map[int]int{0: 0, 2: 0},
+			map[int]int{0: 0, 2: 1},
+			map[int]int{0: 0, 2: 2},
+			map[int]int{0: 1, 2: 0},
+			map[int]int{0: 1, 2: 1},
+			map[int]int{0: 1, 2: 2},
+		},
+	}, {
+		[]*Var{New(2, 3, "", false), New(0, 2, "", false), New(6, 2, "", false)},
+		[]map[int]int{
+			map[int]int{2: 0, 0: 0, 6: 0},
+			map[int]int{2: 1, 0: 0, 6: 0},
+			map[int]int{2: 2, 0: 0, 6: 0},
+			map[int]int{2: 0, 0: 1, 6: 0},
+			map[int]int{2: 1, 0: 1, 6: 0},
+			map[int]int{2: 2, 0: 1, 6: 0},
+			map[int]int{2: 0, 0: 0, 6: 1},
+			map[int]int{2: 1, 0: 0, 6: 1},
+			map[int]int{2: 2, 0: 0, 6: 1},
+			map[int]int{2: 0, 0: 1, 6: 1},
+			map[int]int{2: 1, 0: 1, 6: 1},
+			map[int]int{2: 2, 0: 1, 6: 1},
+		},
+	}}
+	for _, tt := range cases {
+		ix := NewOrderedIndex(tt.forVars)
+		for i, m := range tt.attrbMaps {
+			got := ix.Attribution()
+			if !reflect.DeepEqual(got, m) {
+				t.Errorf("wrong attribution map i[%v]=%v, should be %v", i, got, m)
+			}
+			ix.Next()
+		}
+	}
+}

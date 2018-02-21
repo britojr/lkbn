@@ -89,3 +89,22 @@ func (ix *Index) NextRight() bool {
 	}
 	return false
 }
+
+// OrderedIndex defines a way to iterate through joints of variables in arbitrary order
+type OrderedIndex struct {
+	*Index
+}
+
+// NewOrderedIndex creates a new index to iterate in arbitrary ordering
+func NewOrderedIndex(forVars []*Var) (ix *OrderedIndex) {
+	ix = &OrderedIndex{new(Index)}
+	ix.vs = forVars
+	ix.attrb = make([]int, len(forVars))
+	ix.stride = make([]int, len(forVars))
+	s := 1
+	for j, v := range forVars {
+		ix.stride[j] = s
+		s *= v.NState()
+	}
+	return
+}

@@ -65,15 +65,15 @@ func writeBif(ct *model.CTree, fname string) {
 			pavs := nd.Variables().Intersec(nd.Parent().Variables())
 			fmt.Fprintf(f, "probability ( %v | %v ) {\n", strings.Join(varNames(xvs), ", "), strings.Join(varNames(pavs), ", "))
 
-			ixf := vars.NewIndexFor(xvs, xvs)
+			ixf := vars.NewIndexFor(pavs, pavs)
 			for !ixf.Ended() {
 				attrbMap := ixf.Attribution()
 				attrbStr := make([]string, 0, len(attrbMap))
-				for _, v := range xvs {
+				for _, v := range pavs {
 					attrbStr = append(attrbStr, varStates(v)[attrbMap[v.ID()]])
 				}
 				p := nd.Potential().Copy()
-				p.Reduce(attrbMap).SumOut(xvs...)
+				p.Reduce(attrbMap).SumOut(pavs...)
 				tableInd := strings.Join(attrbStr, ", ")
 				tableVal := strings.Join(conv.Sftoa(p.Values()), ", ")
 				fmt.Fprintf(f, "  (%v) %v;\n", tableInd, tableVal)

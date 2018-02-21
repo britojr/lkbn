@@ -129,16 +129,19 @@ func parseLTMbif(fname string) ([]*factor.Factor, vars.VarList) {
 			id++
 		}
 		if w == "probability" {
+			varOrd := make([]*vars.Var, 0, 2)
 			clq := vars.VarList{}
 			fmt.Fscanf(fi, "%s", &w)
 			fmt.Fscanf(fi, "%s", &name)
 			name = strings.Trim(name, "\"")
-			clq.Add(findVar(vs, name))
+			varOrd = append(varOrd, findVar(vs, name))
+			clq.Add(varOrd[0])
 			fmt.Fscanf(fi, "%s", &w)
 			if w == "|" {
 				fmt.Fscanf(fi, "%s", &name)
 				name = strings.Trim(name, "\"")
-				clq.Add(findVar(vs, name))
+				varOrd = append(varOrd, findVar(vs, name))
+				clq.Add(varOrd[1])
 			}
 
 			for strings.Index(w, "table") != 0 {
@@ -152,14 +155,18 @@ func parseLTMbif(fname string) ([]*factor.Factor, vars.VarList) {
 				fmt.Fscanf(fi, "%s", &w)
 			}
 
-			// need to invert variable order
-			arranged := make([]float64, len(values))
-			ixf := vars.NewIndexFor(clq, clq)
-			for _, v := range values {
-				arranged[ixf.I()] = v
-				ixf.NextRight()
+			if len(clq) == 1 {
+				pots = append(pots, factor.New(clq...).SetValues(values))
+			} else {
+				// need to invert variable order
+				arranged := make([]float64, len(values))
+				ixf := vars.NewOrderedIndex(clq, varOrd)
+				for _, v := range values {
+					arranged[ixf.I()] = v
+					ixf.NextRight()
+				}
+				pots = append(pots, factor.New(clq...).SetValues(arranged))
 			}
-			pots = append(pots, factor.New(clq...).SetValues(arranged))
 		}
 		_, err = fmt.Fscanf(fi, "%s", &w)
 	}

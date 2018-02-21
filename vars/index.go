@@ -96,15 +96,19 @@ type OrderedIndex struct {
 }
 
 // NewOrderedIndex creates a new index to iterate in arbitrary ordering
-func NewOrderedIndex(forVars []*Var) (ix *OrderedIndex) {
+func NewOrderedIndex(indexVars, forVars []*Var) (ix *OrderedIndex) {
 	ix = &OrderedIndex{new(Index)}
-	ix.vs = forVars
-	ix.attrb = make([]int, len(forVars))
-	ix.stride = make([]int, len(forVars))
+	ix.vs = indexVars
+	ix.attrb = make([]int, len(indexVars))
+	ix.stride = make([]int, len(indexVars))
 	s := 1
-	for j, v := range forVars {
-		ix.stride[j] = s
+	mStride := make(map[int]int)
+	for _, v := range forVars {
+		mStride[v.ID()] = s
 		s *= v.NState()
+	}
+	for j, v := range indexVars {
+		ix.stride[j] = mStride[v.ID()]
 	}
 	return
 }

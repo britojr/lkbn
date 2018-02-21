@@ -109,10 +109,25 @@ func TestAttribution(t *testing.T) {
 
 func TestNewOrderedIndex(t *testing.T) {
 	cases := []struct {
-		forVars   []*Var
-		attrbMaps []map[int]int
+		indexVars, forVars []*Var
+		seq                []int
+		attrbMaps          []map[int]int
 	}{{
 		[]*Var{New(0, 2, "", false), New(2, 3, "", false)},
+		[]*Var{New(0, 2, "", false), New(2, 3, "", false)},
+		[]int{0, 1, 2, 3, 4, 5},
+		[]map[int]int{
+			map[int]int{0: 0, 2: 0},
+			map[int]int{0: 1, 2: 0},
+			map[int]int{0: 0, 2: 1},
+			map[int]int{0: 1, 2: 1},
+			map[int]int{0: 0, 2: 2},
+			map[int]int{0: 1, 2: 2},
+		},
+	}, {
+		[]*Var{New(0, 2, "", false), New(2, 3, "", false)},
+		[]*Var{New(2, 3, "", false), New(0, 2, "", false)},
+		[]int{0, 3, 1, 4, 2, 5},
 		[]map[int]int{
 			map[int]int{0: 0, 2: 0},
 			map[int]int{0: 1, 2: 0},
@@ -123,6 +138,8 @@ func TestNewOrderedIndex(t *testing.T) {
 		},
 	}, {
 		[]*Var{New(2, 3, "", false), New(0, 2, "", false)},
+		[]*Var{New(0, 2, "", false), New(2, 3, "", false)},
+		[]int{0, 2, 4, 1, 3, 5},
 		[]map[int]int{
 			map[int]int{0: 0, 2: 0},
 			map[int]int{0: 0, 2: 1},
@@ -131,29 +148,23 @@ func TestNewOrderedIndex(t *testing.T) {
 			map[int]int{0: 1, 2: 1},
 			map[int]int{0: 1, 2: 2},
 		},
-	}, {
-		[]*Var{New(2, 3, "", false), New(0, 2, "", false), New(6, 2, "", false)},
-		[]map[int]int{
-			map[int]int{2: 0, 0: 0, 6: 0},
-			map[int]int{2: 1, 0: 0, 6: 0},
-			map[int]int{2: 2, 0: 0, 6: 0},
-			map[int]int{2: 0, 0: 1, 6: 0},
-			map[int]int{2: 1, 0: 1, 6: 0},
-			map[int]int{2: 2, 0: 1, 6: 0},
-			map[int]int{2: 0, 0: 0, 6: 1},
-			map[int]int{2: 1, 0: 0, 6: 1},
-			map[int]int{2: 2, 0: 0, 6: 1},
-			map[int]int{2: 0, 0: 1, 6: 1},
-			map[int]int{2: 1, 0: 1, 6: 1},
-			map[int]int{2: 2, 0: 1, 6: 1},
-		},
 	}}
 	for _, tt := range cases {
-		ix := NewOrderedIndex(tt.forVars)
+		ix := NewOrderedIndex(tt.indexVars, tt.forVars)
 		for i, m := range tt.attrbMaps {
 			got := ix.Attribution()
 			if !reflect.DeepEqual(got, m) {
 				t.Errorf("wrong attribution map i[%v]=%v, should be %v", i, got, m)
+			}
+			ix.Next()
+		}
+		ix.Reset()
+		for i, v := range tt.seq {
+			if ix.Ended() {
+				t.Errorf("RESET index ended at %v iterations, should have %v", i, len(tt.seq))
+			}
+			if v != ix.I() {
+				t.Errorf("wrong RESET index i[%v]=%v, should be i[%v]%v", i, ix.I(), i, tt.seq[i])
 			}
 			ix.Next()
 		}

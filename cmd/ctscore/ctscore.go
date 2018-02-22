@@ -35,6 +35,13 @@ func main() {
 
 	log.Println("Reading model structure")
 	ct := model.ReadCTree(modelFIn)
+	// check variable ordering
+	for i, v := range dataSet.Variables() {
+		if ct.Variables()[i].Name() != v.Name() {
+			log.Printf("error: wrong variable ordering:\n%v\n%v\n", dataSet.Variables(), ct.Variables())
+			os.Exit(1)
+		}
+	}
 
 	log.Println("Computing scores")
 	start := time.Now()

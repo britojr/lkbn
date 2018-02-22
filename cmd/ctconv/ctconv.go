@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
@@ -23,9 +24,10 @@ const (
 
 // converts an LTM in bif format to ctree format
 func main() {
-	var inFile, outFile, convType string
+	var inFile, outFile, convType, dataFile string
 	flag.StringVar(&inFile, "i", "", "input file")
 	flag.StringVar(&outFile, "o", "", "output file")
+	flag.StringVar(&dataFile, "d", "", "dataset file")
 	flag.StringVar(&convType, "t", biToCtree, "conversion type ("+strings.Join([]string{biToCtree, biToBif}, "|")+")")
 	flag.Parse()
 
@@ -34,7 +36,13 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
-	potentials, _ := parseLTMbif(inFile)
+	var vs vars.VarList
+	if len(dataFile) != 0 {
+		vs = data.NewDataset(dataFile).Variables()
+	} else {
+		vs = []*vars.Var{}
+	}
+	potentials, _ := parseLTMbif(inFile, vs)
 	ct := buildCTree(potentials)
 	switch convType {
 	case biToCtree:
@@ -101,14 +109,21 @@ func varNames(vs vars.VarList) (s []string) {
 	return
 }
 
-func parseLTMbif(fname string) ([]*factor.Factor, vars.VarList) {
+func maxID(vs vars.VarList) int {
+	if len(vs) > 0 {
+		return vs[len(vs)-1].ID()
+	}
+	return -1
+}
+
+func parseLTMbif(fname string, vs vars.VarList) ([]*factor.Factor, vars.VarList) {
 	var (
-		vs         vars.VarList
-		pots       []*factor.Factor
-		nstate, id int
-		w, name    string
-		latent     bool
+		pots    []*factor.Factor
+		nstate  int
+		w, name string
+		latent  bool
 	)
+	id := maxID(vs) + 1
 	fi := ioutl.OpenFile(fname)
 	defer fi.Close()
 
@@ -117,16 +132,19 @@ func parseLTMbif(fname string) ([]*factor.Factor, vars.VarList) {
 		if w == "variable" {
 			fmt.Fscanf(fi, "%s", &name)
 			name = strings.Trim(name, "\"")
-			latent = false
-			if strings.Index(name, "variable") >= 0 {
-				latent = true
+			v := findVar(vs, name)
+			if v == nil {
+				latent = false
+				if strings.Index(name, "variable") >= 0 {
+					latent = true
+				}
+				for strings.Index(w, "discrete") != 0 {
+					fmt.Fscanf(fi, "%s", &w)
+				}
+				nstate = conv.Atoi(strings.Trim(w[len("discrete"):], "[]"))
+				vs.Add(vars.New(id, nstate, name, latent))
+				id++
 			}
-			for strings.Index(w, "discrete") != 0 {
-				fmt.Fscanf(fi, "%s", &w)
-			}
-			nstate = conv.Atoi(strings.Trim(w[len("discrete"):], "[]"))
-			vs.Add(vars.New(id, nstate, name, latent))
-			id++
 		}
 		if w == "probability" {
 			varOrd := make([]*vars.Var, 0, 2)

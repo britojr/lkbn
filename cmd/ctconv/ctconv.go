@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +15,7 @@ import (
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
 	"github.com/britojr/utl/conv"
+	"github.com/britojr/utl/errchk"
 	"github.com/britojr/utl/ioutl"
 )
 
@@ -20,6 +23,7 @@ import (
 const (
 	biToCtree = "bi-ctree"
 	biToBif   = "bi-bif"
+	xmlToBif  = "xml-bif"
 )
 
 // converts an LTM in bif format to ctree format
@@ -28,7 +32,7 @@ func main() {
 	flag.StringVar(&inFile, "i", "", "input file")
 	flag.StringVar(&outFile, "o", "", "output file")
 	flag.StringVar(&dataFile, "d", "", "dataset file")
-	flag.StringVar(&convType, "t", biToCtree, "conversion type ("+strings.Join([]string{biToCtree, biToBif}, "|")+")")
+	flag.StringVar(&convType, "t", biToCtree, "conversion type ("+strings.Join([]string{biToCtree, biToBif, xmlToBif}, "|")+")")
 	flag.Parse()
 
 	if len(inFile) == 0 || len(outFile) == 0 {
@@ -42,13 +46,17 @@ func main() {
 	} else {
 		vs = []*vars.Var{}
 	}
-	potentials, _ := parseLTMbif(inFile, vs)
-	ct := buildCTree(potentials)
 	switch convType {
 	case biToCtree:
+		potentials, _ := parseLTMbif(inFile, vs)
+		ct := buildCTree(potentials)
 		ct.Write(outFile)
 	case biToBif:
+		potentials, _ := parseLTMbif(inFile, vs)
+		ct := buildCTree(potentials)
 		writeBif(ct, outFile)
+	case xmlToBif:
+		writeXMLToBif(inFile, outFile)
 	default:
 		fmt.Printf("\n error: invalid conversion option: (%v)\n\n", convType)
 		flag.PrintDefaults()
@@ -255,5 +263,89 @@ func getMaxIntersec(f *factor.Factor, fs []*factor.Factor) (fi []*factor.Factor,
 			fr = append(fr, g)
 		}
 	}
+	return
+}
+
+// XMLBIF defines xmlbif structure
+type XMLBIF struct {
+	Network Net `xml:"NETWORK"`
+}
+
+// Net defines network in xmlbif pattern
+type Net struct {
+	Name      string     `xml:"NAME"`
+	Variables []Variable `xml:"VARIABLE"`
+	Probs     []Prob     `xml:"DEFINITION"`
+}
+
+// Variable a variable in xmlbif
+type Variable struct {
+	Name   string   `xml:"NAME"`
+	States []string `xml:"OUTCOME"`
+}
+
+// Prob conditional probability in xmlbif
+type Prob struct {
+	For   string   `xml:"FOR"`
+	Given []string `xml:"GIVEN"`
+	Table string   `xml:"TABLE"`
+}
+
+func parseXMLBif(fname string) Net {
+	f := ioutl.OpenFile(fname)
+	defer f.Close()
+	b, err := ioutil.ReadAll(f)
+	errchk.Check(err, "")
+	var bn XMLBIF
+	err = xml.Unmarshal(b, &bn)
+	errchk.Check(err, "")
+	return bn.Network
+}
+
+func writeXMLToBif(inFile, outFile string) {
+	xmlbn := parseXMLBif(inFile)
+	fmt.Println(xmlbn)
+
+	f := ioutl.CreateFile(outFile)
+	defer f.Close()
+	fmt.Fprintf(f, "network %v {}\n", xmlbn.Name)
+	vs := vars.VarList{}
+	for i, v := range xmlbn.Variables {
+		u := vars.New(i, len(v.States), v.Name, false)
+		fmt.Fprintf(f, "variable %v {\n", u.Name())
+		fmt.Fprintf(f, "  type discrete [ %v ] { %v };\n", u.NState(), strings.Join(varStates(u), ", "))
+		fmt.Fprintf(f, "}\n")
+		vs.Add(u)
+	}
+	for _, p := range xmlbn.Probs {
+		if len(p.Given) > 0 {
+			fmt.Fprintf(f, "probability ( %v | %v ) {\n", p.For, strings.Join(p.Given, ", "))
+			xv := findVar(vs, p.For)
+			pavs := []*vars.Var{}
+			for _, name := range p.Given {
+				pavs = append(pavs, findVar(vs, name))
+			}
+			ixf := vars.NewOrderedIndex(pavs, pavs)
+			k := 0
+			tableVals := strings.Fields(strings.Trim(p.Table, " "))
+			for !ixf.Ended() {
+				attrbMap := ixf.Attribution()
+				attrbStr := make([]string, 0, len(attrbMap))
+				for _, v := range pavs {
+					attrbStr = append(attrbStr, varStates(v)[attrbMap[v.ID()]])
+				}
+				tableInd := strings.Join(attrbStr, ", ")
+				tableVal := strings.Join(tableVals[k:k+xv.NState()], ", ")
+				fmt.Fprintf(f, "  (%v) %v;\n", tableInd, tableVal)
+				ixf.Next()
+				k += xv.NState()
+			}
+		} else {
+			fmt.Fprintf(f, "probability ( %v ) {\n", p.For)
+			fmt.Fprintf(f, "  table %v;\n", strings.Replace(strings.Trim(p.Table, " "), " ", ", ", -1))
+		}
+		fmt.Fprintf(f, "}\n")
+	}
+
 	return
 }

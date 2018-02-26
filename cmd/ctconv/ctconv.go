@@ -304,7 +304,6 @@ func parseXMLBif(fname string) Net {
 
 func writeXMLToBif(inFile, outFile string) {
 	xmlbn := parseXMLBif(inFile)
-	fmt.Println(xmlbn)
 
 	f := ioutl.CreateFile(outFile)
 	defer f.Close()

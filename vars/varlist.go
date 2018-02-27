@@ -157,6 +157,17 @@ func (vl *VarList) Remove(xid int) VarList {
 	return *vl
 }
 
+// FindByName finds variable with given name.
+// if there is no variable with this name, returns nil
+func (vl VarList) FindByName(name string) *Var {
+	for _, v := range vl {
+		if v.Name() == name {
+			return v
+		}
+	}
+	return nil
+}
+
 // IntersecID returns new list with elements present in vl and in ids
 // func (vl VarList) IntersecID(ids ...int) (w VarList) {
 // 	sort.Ints(ids)

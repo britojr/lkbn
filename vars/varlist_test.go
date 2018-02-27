@@ -229,3 +229,34 @@ func TestIntersec(t *testing.T) {
 		}
 	}
 }
+
+func TestFindByName(t *testing.T) {
+	vs := []*Var{New(3, 2, "X3", false), New(4, 2, "X4", false), New(5, 4, "X5", false), New(7, 4, "X7", false)}
+	cases := []struct {
+		vl   VarList
+		name string
+		want *Var
+	}{
+		{[]*Var{}, "X1", nil},
+		{[]*Var(nil), "X1", nil},
+		{vs, "X1", nil},
+		{vs, "X3", vs[0]},
+		{vs, "X5", vs[2]},
+		{vs, "X7", vs[3]},
+	}
+	for _, tt := range cases {
+		got := tt.vl.FindByName(tt.name)
+		if tt.want == nil {
+			if got != nil {
+				t.Errorf("shouldn't find variable %v != %v", tt.want, got)
+			}
+		} else {
+			if got == nil {
+				t.Errorf("didn't find variable %v != %v", tt.want, got)
+			}
+			if tt.want.Name() != got.Name() {
+				t.Errorf("wrong variable %v != %v", tt.want, got)
+			}
+		}
+	}
+}

@@ -48,6 +48,11 @@ func (b *BNet) Node(v *vars.Var) *BNode {
 	return b.nodes[v]
 }
 
+// Variables returns bnet variables
+func (b *BNet) Variables() vars.VarList {
+	return b.vs
+}
+
 // ReadBNetXML creates new BNet from xmlbif file
 func ReadBNetXML(fname string) *BNet {
 	b := NewBNet()
@@ -57,10 +62,10 @@ func ReadBNetXML(fname string) *BNet {
 		b.vs.Add(u)
 	}
 	for _, p := range xmlbn.Probs {
-		var values []float64
 		vx := b.vs.FindByName(p.For)
 		if len(p.Given) == 0 {
-			values = conv.Satof(strings.Fields(strings.Trim(p.Table, " ")))
+			values := conv.Satof(strings.Fields(strings.Trim(p.Table, " ")))
+			b.nodes[vx] = &BNode{vx, factor.New(vx).SetValues(values)}
 		} else {
 			pavx, pavl := []*vars.Var{vx}, vars.VarList{vx}
 			for _, name := range p.Given {
@@ -70,13 +75,13 @@ func ReadBNetXML(fname string) *BNet {
 			}
 			ixf := vars.NewOrderedIndex(pavx, pavl)
 			tableVals := conv.Satof(strings.Fields(strings.Trim(p.Table, " ")))
-			values = make([]float64, len(tableVals))
+			values := make([]float64, len(tableVals))
 			for i := 0; !ixf.Ended(); i++ {
 				values[i] = tableVals[ixf.I()]
 				ixf.Next()
 			}
+			b.nodes[vx] = &BNode{vx, factor.New(pavl...).SetValues(values)}
 		}
-		b.nodes[vx] = &BNode{vx, factor.New(vx).SetValues(values)}
 	}
 	return b
 }

@@ -2,6 +2,7 @@ package factor
 
 import (
 	"errors"
+	"math"
 	"math/rand"
 	"time"
 
@@ -118,6 +119,14 @@ func (f *Factor) UniformDistribute(xs ...*vars.Var) *Factor {
 // ResetValues realocates values slice
 func (f *Factor) ResetValues() *Factor {
 	f.values = make([]float64, f.vs.NStates())
+	return f
+}
+
+// Log applies log on factor values
+func (f *Factor) Log() *Factor {
+	for i, v := range f.values {
+		f.values[i] = math.Log(v)
+	}
 	return f
 }
 

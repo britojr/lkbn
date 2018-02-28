@@ -87,6 +87,28 @@ func TestPlus(t *testing.T) {
 	}
 }
 
+func TestMinus(t *testing.T) {
+	cases := []struct {
+		f, g   *Factor
+		result []float64
+	}{{
+		New(vars.NewList([]int{1, 3}, nil)...).SetValues([]float64{5, 6, 7, 8}),
+		New(vars.NewList([]int{1, 3}, nil)...).SetValues([]float64{1, 2, 3, 4}),
+		[]float64{4, 4, 4, 4},
+	}, {
+		New(vars.NewList([]int{1, 3}, []int{2, 3})...).SetValues([]float64{5, 6, 7, 8, 9, 10}),
+		New(vars.NewList([]int{1}, []int{2})...).SetValues([]float64{1, 2}),
+		[]float64{4, 4, 6, 6, 8, 8},
+	}}
+	for _, tt := range cases {
+		got := tt.f
+		got.Minus(tt.g)
+		if !reflect.DeepEqual(tt.result, got.values) {
+			t.Errorf("wrong result %v != %v", tt.result, got.values)
+		}
+	}
+}
+
 func TestTimes(t *testing.T) {
 	cases := []struct {
 		f, g   *Factor

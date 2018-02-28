@@ -126,6 +126,11 @@ func (f *Factor) Plus(g *Factor) *Factor {
 	return f.operationIn(g, opAdd)
 }
 
+// Minus subtracts g from f (returns f = f - g)
+func (f *Factor) Minus(g *Factor) *Factor {
+	return f.operationIn(g, opSub)
+}
+
 // Times multiplies f by g
 func (f *Factor) Times(g *Factor) *Factor {
 	return f.operationIn(g, opMul)

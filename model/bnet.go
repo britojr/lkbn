@@ -92,9 +92,14 @@ type BNode struct {
 	cpt *factor.Factor
 }
 
-// Variable return node pivot variable
+// Variable returns pivot variable
 func (nd *BNode) Variable() *vars.Var {
 	return nd.vx
+}
+
+// Parents returns parents variables
+func (nd *BNode) Parents() vars.VarList {
+	return nd.cpt.Variables().Diff(vars.VarList{nd.vx})
 }
 
 // Potential return node potential

@@ -88,6 +88,13 @@ func TestReadBNetXML(t *testing.T) {
 		}),
 		factor.New(vs[0], vs[4]).SetValues([]float64{0.0249, 0.6028, 0.9751, 0.3972}),
 	}
+	parents := map[int]vars.VarList{
+		0: vars.VarList{},
+		1: vars.VarList{vs[0]},
+		2: vars.VarList{vs[0], vs[1]},
+		3: vars.VarList{vs[0], vs[1], vs[4]},
+		4: vars.VarList{vs[0]},
+	}
 	b := ReadBNetXML(fname)
 	if b == nil || len(b.nodes) == 0 {
 		t.Errorf("return empty bnet: %v\n", b)
@@ -104,6 +111,11 @@ func TestReadBNetXML(t *testing.T) {
 		}
 		if !reflect.DeepEqual(b.Node(v).Potential().Values(), fs[i].Values()) {
 			t.Errorf("wrong node values %v != %v", b.Node(v).Potential().Values(), fs[i].Values())
+		}
+	}
+	for i, v := range b.Variables() {
+		if !b.Node(v).Parents().Equal(parents[i]) {
+			t.Errorf("wrong parents %v != %v\n", b.Node(v).Parents(), parents[i])
 		}
 	}
 }

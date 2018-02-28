@@ -150,6 +150,17 @@ func TestMarginalizedFamily(t *testing.T) {
 		3: f.Copy().Marginalize(vs[0], vs[1], vs[3], vs[4]),
 		4: f.Copy().Marginalize(vs[0], vs[4]),
 	}
+	// p0134 := f.Copy().Marginalize(vs[0], vs[1], vs[3], vs[4])
+	// p012, err := f.Copy().Marginalize(vs[0], vs[1], vs[2]).Normalize(vs[2])
+	// errchk.Check(err, "")
+	// qjoint := p0134.Copy().Times(p012)
+	// fmt.Printf("\np0134: %v\n", strings.Join(conv.Sftoa(p0134.Values()), ", "))
+	// fmt.Printf("\np012: %v\n", strings.Join(conv.Sftoa(p012.Values()), ", "))
+	//
+	// if !floats.EqualApprox(f.Values(), qjoint.Values(), tol) {
+	// 	t.Fatalf("wrong joint\n%v\n!=\n%v\n", f.Values(), qjoint.Values())
+	// }
+
 	for i, v := range vs {
 		got := b.MarginalizedFamily(v)
 		if !famMargs[i].Variables().Equal(got.Variables()) {

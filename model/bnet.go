@@ -86,6 +86,21 @@ func ReadBNetXML(fname string) *BNet {
 	return b
 }
 
+// MarginalizedFamily returns the marginalized family of x:  P(x, pax)
+func (b *BNet) MarginalizedFamily(x *vars.Var) *factor.Factor {
+	f := b.nodes[x].cpt.Copy()
+	queue := b.nodes[x].Parents().Copy()
+	visit := vars.VarList{}
+	for len(queue) > 0 {
+		pa := queue[0]
+		queue = queue[1:]
+		visit.Add(pa)
+		f.Times(b.nodes[pa].Potential())
+		queue = queue.Union(b.nodes[pa].Parents().Diff(visit))
+	}
+	return f.Marginalize(b.nodes[x].cpt.Variables()...)
+}
+
 // BNode defines a BN node
 type BNode struct {
 	vx  *vars.Var

@@ -7,74 +7,78 @@ import (
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/vars"
 	"github.com/britojr/utl/ioutl"
+	"gonum.org/v1/gonum/floats"
 )
 
-func TestReadBNetXML(t *testing.T) {
-	content := `<?xml version="1.0" encoding="UTF-8"?>
-	<BIF VERSION="0.3">
-	<NETWORK>
-	<NAME>InternalNetwork</NAME>
-	<VARIABLE TYPE="nature">
-		<NAME>node0</NAME>
-		<OUTCOME>state0</OUTCOME>
-		<OUTCOME>state1</OUTCOME>
-		<PROPERTY>position = (45, 30)</PROPERTY>
-	</VARIABLE>
-	<VARIABLE TYPE="nature">
-		<NAME>node1</NAME>
-		<OUTCOME>state0</OUTCOME>
-		<OUTCOME>state1</OUTCOME>
-		<PROPERTY>position = (15, 150)</PROPERTY>
-	</VARIABLE>
-	<VARIABLE TYPE="nature">
-		<NAME>node2</NAME>
-		<OUTCOME>state0</OUTCOME>
-		<OUTCOME>state1</OUTCOME>
-		<PROPERTY>position = (44, 270)</PROPERTY>
-	</VARIABLE>
-	<VARIABLE TYPE="nature">
-		<NAME>node3</NAME>
-		<OUTCOME>state0</OUTCOME>
-		<OUTCOME>state1</OUTCOME>
-		<PROPERTY>position = (15, 390)</PROPERTY>
-	</VARIABLE>
-	<VARIABLE TYPE="nature">
-		<NAME>node4</NAME>
-		<OUTCOME>state0</OUTCOME>
-		<OUTCOME>state1</OUTCOME>
-		<PROPERTY>position = (135, 164)</PROPERTY>
-	</VARIABLE>
-	<DEFINITION>
-		<FOR>node0</FOR>
-		<TABLE>0.587 0.413 </TABLE>
-	</DEFINITION>
-	<DEFINITION>
-		<FOR>node1</FOR>
-		<GIVEN>node0</GIVEN>
-		<TABLE>0.8052 0.1948 0.6901 0.3099 </TABLE>
-	</DEFINITION>
-	<DEFINITION>
-		<FOR>node2</FOR>
-		<GIVEN>node1</GIVEN>
-		<GIVEN>node0</GIVEN>
-		<TABLE>0.3264 0.6736 0.5806 0.4194 0.3579 0.6421 0.5468 0.4532 </TABLE>
-	</DEFINITION>
-	<DEFINITION>
-		<FOR>node3</FOR>
-		<GIVEN>node4</GIVEN>
-		<GIVEN>node0</GIVEN>
-		<GIVEN>node1</GIVEN>
-		<TABLE>0.948 0.052 0.5574 0.4426 0.0517 0.9483 0.3416 0.6584 0.8135 0.1865 0.2107 0.7893 0.7964 0.2036 0.5683 0.4317 </TABLE>
-	</DEFINITION>
-	<DEFINITION>
-		<FOR>node4</FOR>
-		<GIVEN>node0</GIVEN>
-		<TABLE>0.0249 0.9751 0.6028 0.3972 </TABLE>
-	</DEFINITION>
-	</NETWORK>
-	</BIF>
+const tol = 1e-8
+
+var xmlbifNet1 = `<?xml version="1.0" encoding="UTF-8"?>
+<BIF VERSION="0.3">
+<NETWORK>
+<NAME>InternalNetwork</NAME>
+<VARIABLE TYPE="nature">
+	<NAME>node0</NAME>
+	<OUTCOME>state0</OUTCOME>
+	<OUTCOME>state1</OUTCOME>
+	<PROPERTY>position = (45, 30)</PROPERTY>
+</VARIABLE>
+<VARIABLE TYPE="nature">
+	<NAME>node1</NAME>
+	<OUTCOME>state0</OUTCOME>
+	<OUTCOME>state1</OUTCOME>
+	<PROPERTY>position = (15, 150)</PROPERTY>
+</VARIABLE>
+<VARIABLE TYPE="nature">
+	<NAME>node2</NAME>
+	<OUTCOME>state0</OUTCOME>
+	<OUTCOME>state1</OUTCOME>
+	<PROPERTY>position = (44, 270)</PROPERTY>
+</VARIABLE>
+<VARIABLE TYPE="nature">
+	<NAME>node3</NAME>
+	<OUTCOME>state0</OUTCOME>
+	<OUTCOME>state1</OUTCOME>
+	<PROPERTY>position = (15, 390)</PROPERTY>
+</VARIABLE>
+<VARIABLE TYPE="nature">
+	<NAME>node4</NAME>
+	<OUTCOME>state0</OUTCOME>
+	<OUTCOME>state1</OUTCOME>
+	<PROPERTY>position = (135, 164)</PROPERTY>
+</VARIABLE>
+<DEFINITION>
+	<FOR>node0</FOR>
+	<TABLE>0.587 0.413 </TABLE>
+</DEFINITION>
+<DEFINITION>
+	<FOR>node1</FOR>
+	<GIVEN>node0</GIVEN>
+	<TABLE>0.8052 0.1948 0.6901 0.3099 </TABLE>
+</DEFINITION>
+<DEFINITION>
+	<FOR>node2</FOR>
+	<GIVEN>node1</GIVEN>
+	<GIVEN>node0</GIVEN>
+	<TABLE>0.3264 0.6736 0.5806 0.4194 0.3579 0.6421 0.5468 0.4532 </TABLE>
+</DEFINITION>
+<DEFINITION>
+	<FOR>node3</FOR>
+	<GIVEN>node4</GIVEN>
+	<GIVEN>node0</GIVEN>
+	<GIVEN>node1</GIVEN>
+	<TABLE>0.948 0.052 0.5574 0.4426 0.0517 0.9483 0.3416 0.6584 0.8135 0.1865 0.2107 0.7893 0.7964 0.2036 0.5683 0.4317 </TABLE>
+</DEFINITION>
+<DEFINITION>
+	<FOR>node4</FOR>
+	<GIVEN>node0</GIVEN>
+	<TABLE>0.0249 0.9751 0.6028 0.3972 </TABLE>
+</DEFINITION>
+</NETWORK>
+</BIF>
 `
-	fname := ioutl.TempFile("bnet_test", content)
+
+func TestReadBNetXML(t *testing.T) {
+	fname := ioutl.TempFile("bnet_test", xmlbifNet1)
 	vs := []*vars.Var{
 		vars.New(0, 2, "node0", false), vars.New(1, 2, "node1", false), vars.New(2, 2, "node2", false),
 		vars.New(3, 2, "node3", false), vars.New(4, 2, "node4", false),
@@ -87,13 +91,6 @@ func TestReadBNetXML(t *testing.T) {
 			0.948, 0.0517, 0.8135, 0.7964, 0.052, 0.9483, 0.1865, 0.2036, 0.5574, 0.3416, 0.2107, 0.5683, 0.4426, 0.6584, 0.7893, 0.4317,
 		}),
 		factor.New(vs[0], vs[4]).SetValues([]float64{0.0249, 0.6028, 0.9751, 0.3972}),
-	}
-	parents := map[int]vars.VarList{
-		0: vars.VarList{},
-		1: vars.VarList{vs[0]},
-		2: vars.VarList{vs[0], vs[1]},
-		3: vars.VarList{vs[0], vs[1], vs[4]},
-		4: vars.VarList{vs[0]},
 	}
 	b := ReadBNetXML(fname)
 	if b == nil || len(b.nodes) == 0 {
@@ -113,9 +110,53 @@ func TestReadBNetXML(t *testing.T) {
 			t.Errorf("wrong node values %v != %v", b.Node(v).Potential().Values(), fs[i].Values())
 		}
 	}
+}
+
+func TestBNetParents(t *testing.T) {
+	fname := ioutl.TempFile("bnet_test", xmlbifNet1)
+	vs := []*vars.Var{
+		vars.New(0, 2, "node0", false), vars.New(1, 2, "node1", false), vars.New(2, 2, "node2", false),
+		vars.New(3, 2, "node3", false), vars.New(4, 2, "node4", false),
+	}
+	parents := map[int]vars.VarList{
+		0: vars.VarList{},
+		1: vars.VarList{vs[0]},
+		2: vars.VarList{vs[0], vs[1]},
+		3: vars.VarList{vs[0], vs[1], vs[4]},
+		4: vars.VarList{vs[0]},
+	}
+	b := ReadBNetXML(fname)
 	for i, v := range b.Variables() {
 		if !b.Node(v).Parents().Equal(parents[i]) {
 			t.Errorf("wrong parents %v != %v\n", b.Node(v).Parents(), parents[i])
+		}
+	}
+}
+
+func TestMarginalizedFamily(t *testing.T) {
+	fname := ioutl.TempFile("bnet_test", xmlbifNet1)
+	b := ReadBNetXML(fname)
+	vs := b.Variables()
+	// compute the complete joint
+	f := b.Node(vs[0]).Potential().Copy()
+	for _, v := range vs[1:] {
+		f.Times(b.Node(v).Potential())
+	}
+	// marginalize families
+	famMargs := map[int]*factor.Factor{
+		0: f.Copy().Marginalize(vs[0]),
+		1: f.Copy().Marginalize(vs[0], vs[1]),
+		2: f.Copy().Marginalize(vs[0], vs[1], vs[2]),
+		3: f.Copy().Marginalize(vs[0], vs[1], vs[3], vs[4]),
+		4: f.Copy().Marginalize(vs[0], vs[4]),
+	}
+	for i, v := range vs {
+		got := b.MarginalizedFamily(v)
+		if !famMargs[i].Variables().Equal(got.Variables()) {
+			t.Errorf("wrong variables for the family of %v:\n%v\n!=\n%v\n", v, famMargs[i].Variables(), got.Variables())
+		}
+		if !floats.EqualApprox(famMargs[i].Values(), got.Values(), tol) {
+			t.Errorf("wrong values for the family of %v:\n%v\n!=\n%v\n", v, famMargs[i].Values(), got.Values())
 		}
 	}
 }

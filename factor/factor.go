@@ -176,7 +176,8 @@ func (f *Factor) operationTr(f1, f2 *Factor, op func(a, b float64) float64) *Fac
 }
 
 // Normalize normalizes f so the values add up to one
-// the normalization can be conditional in one variable
+// the normalization can be relative to a list of variables
+//    ex: P(X,Y,Z).Normalize(X) => P(X|Y,Z)
 func (f *Factor) Normalize(xs ...*vars.Var) (*Factor, error) {
 	var err error
 	if len(xs) == 0 {

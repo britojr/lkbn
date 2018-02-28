@@ -6,6 +6,7 @@ import (
 
 	"github.com/britojr/lkbn/inference"
 	"github.com/britojr/lkbn/model"
+	"github.com/gonum/floats"
 )
 
 // ComputeBIC computes Bayesian Information Criterion:
@@ -40,4 +41,46 @@ func ComputeLL(ct *model.CTree, intMaps []map[int]int) float64 {
 		ll += math.Log(evLkhood)
 	}
 	return ll
+}
+
+// TODO: remove
+var debug = true
+
+// KLDiv computes kl-divergence
+func KLDiv(orgNet *model.BNet, compNet *model.CTree) (kld float64) {
+	if debug {
+		return kldivBruteForce(orgNet, compNet)
+	}
+	infalg := inference.NewCTreeCalibration(compNet)
+	for _, v := range orgNet.Variables() {
+		pcond := orgNet.Node(v).Potential().Copy()
+		family := pcond.Variables()
+		qjoint := infalg.Posterior(family, nil)
+		// qcond, _ := infalg.Posterior(family, nil).Normalize(v)
+		pjoint := orgNet.MarginalizedFamily(v)
+
+		kld += floats.Sum(pjoint.Times(pcond.Log().Minus(qjoint.Log())).Values())
+		// kld += floats.Sum(pjoint.Times(pcond.Log().Minus(qcond.Log())).Values())
+	}
+	return
+}
+
+// kldivBruteForce computes kl-divergence with no simplifications
+func kldivBruteForce(orgNet *model.BNet, compNet *model.CTree) (kld float64) {
+	vs := orgNet.Variables()
+	// compute complete pjoint
+	pjoint := orgNet.Node(vs[0]).Potential().Copy()
+	for _, v := range vs[1:] {
+		pjoint.Times(orgNet.Node(v).Potential())
+	}
+	// compute complete qjoint
+	// infalg := inference.NewCTreeCalibration(compNet)
+	// qjoint := infalg.Posterior(vs, nil)
+	qjoint := compNet.Nodes()[0].Potential().Copy()
+	for _, nd := range compNet.Nodes()[1:] {
+		qjoint.Times(nd.Potential())
+	}
+
+	kld = -floats.Sum(pjoint.Times(qjoint.Log().Minus(pjoint.Log())).Values())
+	return kld
 }

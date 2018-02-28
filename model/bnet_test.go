@@ -81,12 +81,12 @@ func TestReadBNetXML(t *testing.T) {
 	}
 	fs := []*factor.Factor{
 		factor.New(vs[0]).SetValues([]float64{0.587, 0.413}),
-		factor.New(vs[0], vs[1]).SetValues([]float64{0.8052, 0.1948, 0.6901, 0.3099}),
-		factor.New(vs[0], vs[1], vs[2]).SetValues([]float64{0.3264, 0.6736, 0.5806, 0.4194, 0.3579, 0.6421, 0.5468, 0.4532}),
+		factor.New(vs[0], vs[1]).SetValues([]float64{0.8052, 0.6901, 0.1948, 0.3099}),
+		factor.New(vs[0], vs[1], vs[2]).SetValues([]float64{0.3264, 0.3579, 0.5806, 0.5468, 0.6736, 0.6421, 0.4194, 0.4532}),
 		factor.New(vs[0], vs[1], vs[3], vs[4]).SetValues([]float64{
-			0.948, 0.052, 0.5574, 0.4426, 0.0517, 0.9483, 0.3416, 0.6584, 0.8135, 0.1865, 0.2107, 0.7893, 0.7964, 0.2036, 0.5683, 0.4317,
+			0.948, 0.0517, 0.8135, 0.7964, 0.052, 0.9483, 0.1865, 0.2036, 0.5574, 0.3416, 0.2107, 0.5683, 0.4426, 0.6584, 0.7893, 0.4317,
 		}),
-		factor.New(vs[0], vs[4]).SetValues([]float64{0.0249, 0.9751, 0.6028, 0.3972}),
+		factor.New(vs[0], vs[4]).SetValues([]float64{0.0249, 0.6028, 0.9751, 0.3972}),
 	}
 	b := ReadBNetXML(fname)
 	if b == nil || len(b.nodes) == 0 {

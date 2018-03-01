@@ -97,7 +97,7 @@ func KLDivEmpNoInf(orgNet *model.BNet, compNet *model.CTree, dataSet []map[int]i
 			lgpx += math.Log(orgNet.Node(v).Potential().Get(e))
 		}
 		for _, nd := range compNet.Nodes() {
-			lgqx += math.Log(nd.Potential().Get(e))
+			lgqx += math.Log(floats.Sum(nd.Potential().Copy().Reduce(e).Values()))
 		}
 		kld += px * (lgpx - lgqx)
 	}

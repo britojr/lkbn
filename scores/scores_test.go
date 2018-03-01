@@ -6,6 +6,7 @@ import (
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/utl/floats"
 	"github.com/britojr/utl/ioutl"
+	gfloats "gonum.org/v1/gonum/floats"
 )
 
 const tol = 1e-10
@@ -137,8 +138,26 @@ func TestKLDiv(t *testing.T) {
 	compFile := ioutl.TempFile("kldiv_test", ctreeN5K3)
 	orgNet := model.ReadBNetXML(orgFile)
 	compNet := model.ReadCTree(compFile)
+	want := kldivBruteForce(orgNet, compNet)
 	got := KLDiv(orgNet, compNet)
-	if !floats.AlmostEqual(got, 0.0, tol) {
-		t.Errorf("failing for two structures with same distribution: %v != %v", 0, got)
+	if !floats.AlmostEqual(want, got, tol) {
+		t.Errorf("wrong result: %v != %v", want, got)
 	}
+}
+
+// kldivBruteForce computes kl-divergence with no simplifications
+func kldivBruteForce(orgNet *model.BNet, compNet *model.CTree) (kld float64) {
+	vs := orgNet.Variables()
+	// compute complete pjoint
+	pjoint := orgNet.Node(vs[0]).Potential().Copy()
+	for _, v := range vs[1:] {
+		pjoint.Times(orgNet.Node(v).Potential())
+	}
+	// compute complete qjoint
+	qjoint := compNet.Nodes()[0].Potential().Copy()
+	for _, nd := range compNet.Nodes()[1:] {
+		qjoint.Times(nd.Potential())
+	}
+	kld = -gfloats.Sum(pjoint.Times(qjoint.Log().Minus(pjoint.Log())).Values())
+	return kld
 }

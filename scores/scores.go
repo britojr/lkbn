@@ -49,12 +49,12 @@ func KLDiv(orgNet *model.BNet, compNet *model.CTree) (kld float64) {
 	for _, v := range orgNet.Variables() {
 		pcond := orgNet.Node(v).Potential().Copy()
 		family := pcond.Variables()
-		qjoint := infalg.Posterior(family, nil)
-		// qcond, _ := infalg.Posterior(family, nil).Normalize(v)
+		// qjoint := infalg.Posterior(family, nil)
+		qcond, _ := infalg.Posterior(family, nil).Normalize(v)
 		pjoint := orgNet.MarginalizedFamily(v)
 
-		kld += floats.Sum(pjoint.Times(pcond.Log().Minus(qjoint.Log())).Values())
-		// kld += floats.Sum(pjoint.Times(pcond.Log().Minus(qcond.Log())).Values())
+		// kld += floats.Sum(pjoint.Times(pcond.Log().Minus(qjoint.Log())).Values())
+		kld += floats.Sum(pjoint.Times(pcond.Log().Minus(qcond.Log())).Values())
 	}
 	return
 }

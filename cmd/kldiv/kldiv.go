@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/scores"
@@ -23,13 +22,10 @@ func main() {
 	log.Printf("========== COMPARING NETWORKS =====================\n")
 	log.Printf("Comparing %v || %v\n", orgFile, compFile)
 
-	start := time.Now()
 	orgNet := model.ReadBNetXML(orgFile)
 	compNet := model.ReadCTree(compFile)
-	kld := scores.KLDiv(orgNet, compNet)
-	elapsed := time.Since(start)
 
-	log.Printf("Time: %v\n", elapsed)
-	log.Printf("KL-divergence: %.6f\n", kld)
+	log.Printf("KL-Divergence: %.6f\n", scores.KLDiv(orgNet, compNet))
+	log.Printf("KLDiv brute force: %.6f\n", scores.KLDivBruteForce(orgNet, compNet))
 	log.Printf("---------------------------------------------------\n")
 }

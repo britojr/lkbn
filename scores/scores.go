@@ -75,3 +75,39 @@ func KLDivBruteForce(orgNet *model.BNet, compNet *model.CTree) (kld float64) {
 	kld = -floats.Sum(pjoint.Times(qjoint.Log().Minus(pjoint.Log())).Values())
 	return kld
 }
+
+// KLDivEmpirical computes kl-divergence approximation using empirical data
+func KLDivEmpirical(orgNet *model.BNet, compNet *model.CTree, dataSet []map[int]int) (kld float64) {
+	infalg := inference.NewCTreeCalibration(compNet)
+	for _, e := range dataSet {
+		px := completeProb(orgNet, e)
+		qx := floats.Sum(infalg.Posterior(nil, e).Values())
+		kld += px * (math.Log(px) - math.Log(qx))
+	}
+	return
+}
+
+// KLDivEmpNoInf computes kl-divergence approximation using empirical data
+// without running inference on the compare network
+func KLDivEmpNoInf(orgNet *model.BNet, compNet *model.CTree, dataSet []map[int]int) (kld float64) {
+	for _, e := range dataSet {
+		px := completeProb(orgNet, e)
+		lgpx, lgqx := .0, .0
+		for _, v := range orgNet.Variables() {
+			lgpx += math.Log(orgNet.Node(v).Potential().Get(e))
+		}
+		for _, nd := range compNet.Nodes() {
+			lgqx += math.Log(nd.Potential().Get(e))
+		}
+		kld += px * (lgpx - lgqx)
+	}
+	return
+}
+
+func completeProb(bn *model.BNet, e map[int]int) float64 {
+	px := 1.0
+	for _, v := range bn.Variables() {
+		px *= bn.Node(v).Potential().Get(e)
+	}
+	return px
+}

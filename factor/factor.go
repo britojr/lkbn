@@ -272,3 +272,18 @@ func (f *Factor) Reduce(e map[int]int) *Factor {
 	}
 	return f
 }
+
+// Get returns the value corresponding to the given attribution
+// the attribution must cover the factor scope
+func (f *Factor) Get(e map[int]int) float64 {
+	step, ind := 1, 0
+	for _, v := range f.vs {
+		if a, ok := e[v.ID()]; ok {
+			ind += a * step
+			step *= v.NState()
+		} else {
+			panic("missing variable of the scope")
+		}
+	}
+	return f.values[ind]
+}

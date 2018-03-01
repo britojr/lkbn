@@ -117,7 +117,15 @@ func (c *cTCalib) upwardmessage(v, pa *model.CTNode) {
 		c.prev[v][i+1] = c.send[ch].Copy().Times(c.prev[v][i])
 	}
 	if pa != nil {
-		c.send[v] = c.prev[v][len(c.prev[v])-1].Copy().Marginalize(append(pa.Variables(), c.preserveSet...)...)
+		if len(c.preserveSet) > 0 {
+			upvs := pa.Variables().Copy()
+			for _, x := range c.preserveSet {
+				upvs.Add(x)
+			}
+			c.send[v] = c.prev[v][len(c.prev[v])-1].Copy().Marginalize(upvs...)
+		} else {
+			c.send[v] = c.prev[v][len(c.prev[v])-1].Copy().Marginalize(pa.Variables()...)
+		}
 	}
 }
 

@@ -6,6 +6,8 @@ import (
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
 	"github.com/britojr/utl/floats"
+	"github.com/britojr/utl/ioutl"
+	gfloats "gonum.org/v1/gonum/floats"
 )
 
 const tol = 1e-6
@@ -110,6 +112,49 @@ nodes:
 				if !floats.AlmostEqual(v, posterior.Values()[i], tol) {
 					t.Errorf("wrong posterior values [%v] %v != %v", i, v, posterior.Values()[i])
 				}
+			}
+		}
+	}
+}
+
+var ctreeN5K3 = `
+variables:
+- {name: node0,  card: 2}
+- {name: node1,  card: 2}
+- {name: node2,  card: 2}
+- {name: node3,  card: 2}
+- {name: node4,  card: 2}
+nodes:
+- clqvars: [node0, node1, node3, node4]
+  values: [1.1157054432479998E-02, 8.882308761788003E-03, 2.3162421377399996E-03, 6.144352496990398E-02, 6.119903275199999E-04, 1.6292250287821203E-01, 5.310131022599999E-04, 1.5708063390096E-02, 2.56896382210776E-01, 3.8671336423776E-02, 2.3493122640931997E-02, 2.8890730545011997E-02, 2.0398697302922397E-01, 7.453515193622401E-02, 8.800722211906799E-02, 2.1946381094987994E-02]
+  parent: []
+- clqvars: [node0, node1, node2]
+  values: [3.264E-01, 3.579E-01, 5.806E-01, 5.468E-01, 6.736E-01, 6.421E-01, 4.194E-01, 4.532E-01]
+  parent: [node0, node1, node3, node4]
+`
+
+func TestPosterior2(t *testing.T) {
+	ctreeFile := ioutl.TempFile("inference_test", ctreeN5K3)
+	ct := model.ReadCTree(ctreeFile)
+	pjoint := ct.Nodes()[0].Potential().Copy()
+	for _, nd := range ct.Nodes()[1:] {
+		pjoint.Times(nd.Potential())
+	}
+	inf := NewCTreeCalibration(ct)
+	// compare joint
+	got := inf.Posterior(ct.Variables(), nil)
+	if !gfloats.EqualApprox(pjoint.Values(), got.Values(), tol) {
+		for i := range pjoint.Values() {
+			t.Errorf("wrong result [%v]: %v\n", i, pjoint.Values()[i]-got.Values()[i])
+		}
+	}
+	// compare marginals
+	for _, v := range ct.Variables() {
+		want := pjoint.Copy().Marginalize(v)
+		got = inf.Posterior(vars.VarList{v}, nil)
+		if !gfloats.EqualApprox(want.Values(), got.Values(), tol) {
+			for i := range want.Values() {
+				t.Errorf("wrong result [%v]: %v\n", i, want.Values()[i]-got.Values()[i])
 			}
 		}
 	}

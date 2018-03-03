@@ -86,6 +86,17 @@ func ReadBNetXML(fname string) *BNet {
 	return b
 }
 
+// Write writes BNet on file
+func (b *BNet) Write(fname string) {
+	// f := ioutl.CreateFile(fname)
+	// d := []byte(c.String())
+	// fmt.Fprintf(f, "# Score: %v\n", c.score)
+	// fmt.Fprintf(f, "# BIC: %v\n", c.bic)
+	// f.Write(d)
+	// f.Close()
+	panic("Not implemented")
+}
+
 // MarginalizedFamily returns the marginalized family of x:  P(x, pax)
 func (b *BNet) MarginalizedFamily(x *vars.Var) *factor.Factor {
 	f := b.nodes[x].cpt.Copy()

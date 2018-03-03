@@ -87,7 +87,7 @@ func runCTLearner() {
 	log.Printf("--------------------------------------------------\n")
 
 	if len(modelFile) > 0 {
-		writeSolution(modelFile, m.(*model.CTree), alg)
+		writeSolution(modelFile, m.(model.Model), alg)
 	}
 }
 
@@ -131,7 +131,7 @@ func runCTParamLearner() {
 	}
 }
 
-func writeSolution(fname string, m *model.CTree, alg learner.Learner) {
+func writeSolution(fname string, m model.Model, alg learner.Learner) {
 	log.Printf("Printing solution: '%v'\n", fname)
 	m.Write(fname)
 }

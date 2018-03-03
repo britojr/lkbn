@@ -12,6 +12,7 @@ import (
 const (
 	AlgCTSampleSearch = "ctsample"
 	AlgCTBridgeSearch = "ctbridge"
+	AlgBIextSearch    = "biext"
 )
 
 // file parameters fields
@@ -43,6 +44,7 @@ func Create(learnerAlg string) (lr Learner) {
 	creators := map[string]func() Learner{
 		AlgCTSampleSearch: NewCTSampleSearch,
 		AlgCTBridgeSearch: NewCTBridgeSearch,
+		AlgBIextSearch:    NewBIextSearch,
 	}
 	if create, ok := creators[learnerAlg]; ok {
 		lr = create()

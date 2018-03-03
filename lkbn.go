@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/britojr/lkbn/learner"
 )
@@ -28,6 +29,7 @@ var (
 	learnerAlg    string // learner strategy
 	timeAvailable int    // time available to search solution
 	numSolutions  int    // number of iterations
+	scoreFile     string // precomputed parentsets score file
 
 	// param learn command
 	modelFIn  string // network input file
@@ -69,9 +71,13 @@ func initSubcommands() {
 	ctLearnComm.StringVar(&dataFile, "d", "", "dataset file in csv format")
 	ctLearnComm.StringVar(&parmFile, "p", "", "parameters file")
 	ctLearnComm.StringVar(&modelFile, "b", "", "network output file")
-	ctLearnComm.StringVar(&learnerAlg, "a", learner.AlgCTSampleSearch, "learner algorithm")
+	ctLearnComm.StringVar(&learnerAlg, "a", learner.AlgCTSampleSearch,
+		"learner algorithm ("+strings.Join([]string{
+			learner.AlgCTSampleSearch, learner.AlgCTBridgeSearch, learner.AlgBIextSearch,
+		}, "|")+")")
 	ctLearnComm.IntVar(&timeAvailable, "t", 60, "available time to search solution (0->unbounded)")
 	ctLearnComm.IntVar(&numSolutions, "i", 1, "max number of iterations (0->unbounded)")
+	ctLearnComm.StringVar(&scoreFile, "s", "", "precomputed scores file")
 
 	// param learn subcommand flags
 	ctParamLearnComm.BoolVar(&verbose, "v", true, "prints detailed steps")

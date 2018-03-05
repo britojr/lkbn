@@ -23,6 +23,12 @@ func NewBNet() *BNet {
 	return b
 }
 
+// AddNode adds node to current bn
+func (b *BNet) AddNode(nd *BNode) {
+	b.vs.Add(nd.vx)
+	b.nodes[nd.vx] = nd
+}
+
 // Better ..
 func (b *BNet) Better(other interface{}) bool {
 	panic("not implemented")
@@ -118,6 +124,16 @@ type BNode struct {
 	cpt *factor.Factor
 }
 
+// NewBNode creates a new node
+func NewBNode(vx *vars.Var) *BNode {
+	return &BNode{vx, nil}
+}
+
+// SetPotential set node potential
+func (nd *BNode) SetPotential(p *factor.Factor) {
+	nd.cpt = p
+}
+
 // Variable returns pivot variable
 func (nd *BNode) Variable() *vars.Var {
 	return nd.vx
@@ -131,9 +147,4 @@ func (nd *BNode) Parents() vars.VarList {
 // Potential return node potential
 func (nd *BNode) Potential() *factor.Factor {
 	return nd.cpt
-}
-
-// SetPotential set node potential
-func (nd *BNode) SetPotential(p *factor.Factor) {
-	nd.cpt = p
 }

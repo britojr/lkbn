@@ -17,10 +17,11 @@ const (
 
 // file parameters fields
 const (
-	ParmTreewidth  = "treewidth"   // structure treewidth
-	ParmNumLatent  = "num_latent"  // number of latent variables
-	ParmLatentVars = "latent_vars" // latent variables cardinalities
-	// ParmMaxParents = "max_parents"
+	ParmTreewidth    = "treewidth"     // structure treewidth
+	ParmNumLatent    = "num_latent"    // number of latent variables
+	ParmLatentVars   = "latent_vars"   // latent variables cardinalities
+	ParmParentScores = "parent_scores" // precomputed parent scores file
+	ParmInputNet     = "input_net"     // tree network previously learned
 )
 
 // Learner defines a structure learner algorithm

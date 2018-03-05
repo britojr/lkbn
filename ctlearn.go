@@ -56,10 +56,16 @@ func runCTLearner() {
 	log.Printf("Save solution in: '%v'\n", modelFile)
 	log.Printf("--------------------------------------------------\n")
 
-	var props map[string]string
+	props := make(map[string]string)
 	if len(parmFile) > 0 {
 		log.Println("Reading parameters file")
 		props = ioutl.ReadYaml(parmFile)
+	}
+	if len(scoreFile) > 0 {
+		props[learner.ParmParentScores] = scoreFile
+	}
+	if len(modelFIn) > 0 {
+		props[learner.ParmInputNet] = modelFIn
 	}
 	log.Println("Reading dataset file")
 	dataSet := data.NewDataset(dataFile)

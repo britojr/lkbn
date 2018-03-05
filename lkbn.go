@@ -78,6 +78,7 @@ func initSubcommands() {
 	ctLearnComm.IntVar(&timeAvailable, "t", 60, "available time to search solution (0->unbounded)")
 	ctLearnComm.IntVar(&numSolutions, "i", 1, "max number of iterations (0->unbounded)")
 	ctLearnComm.StringVar(&scoreFile, "s", "", "precomputed scores file")
+	ctLearnComm.StringVar(&modelFIn, "bi", "", "network input file")
 
 	// param learn subcommand flags
 	ctParamLearnComm.BoolVar(&verbose, "v", true, "prints detailed steps")

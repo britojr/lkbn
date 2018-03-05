@@ -168,6 +168,17 @@ func (vl VarList) FindByName(name string) *Var {
 	return nil
 }
 
+// FindByID finds variable with given id.
+// if there is no variable, returns nil
+func (vl VarList) FindByID(id int) *Var {
+	for _, v := range vl {
+		if v.ID() == id {
+			return v
+		}
+	}
+	return nil
+}
+
 // IntersecID returns new list with elements present in vl and in ids
 // func (vl VarList) IntersecID(ids ...int) (w VarList) {
 // 	sort.Ints(ids)

@@ -1,6 +1,8 @@
 package learner
 
 import (
+	"fmt"
+
 	"github.com/britojr/btbn/optimizer"
 	"github.com/britojr/btbn/scr"
 	"github.com/britojr/lkbn/factor"
@@ -57,8 +59,10 @@ func (s *BIextSearch) Search() Solution {
 				chs.Remove(v.ID())
 			}
 		}
+		fmt.Println(chs)
+		fmt.Println(listIDs(chs))
 		s.iterAlg.(*optimizer.IterativeSearch).SetVarsSubSet(listIDs(chs))
-		bnStruct := optimizer.Search(s.iterAlg, 1, 0)
+		bnStruct := optimizer.Search(s.iterAlg, 0, 10)
 		for _, u := range chs {
 			nd := model.NewBNode(u)
 			bn.AddNode(nd)
@@ -94,9 +98,10 @@ func findChildren(bn *model.BNet, v *vars.Var) (chs vars.VarList) {
 	return
 }
 
-func listIDs(vs []*vars.Var) (is []int) {
+func listIDs(vs []*vars.Var) []int {
+	is := make([]int, 0, len(vs))
 	for _, v := range vs {
 		is = append(is, v.ID())
 	}
-	return
+	return is
 }

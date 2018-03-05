@@ -24,6 +24,7 @@ const (
 	biToCtree = "bi-ctree"
 	biToBif   = "bi-bif"
 	xmlToBif  = "xml-bif"
+	biToXML   = "bi-xml"
 )
 
 // converts an LTM in bif format to ctree format
@@ -32,7 +33,7 @@ func main() {
 	flag.StringVar(&inFile, "i", "", "input file")
 	flag.StringVar(&outFile, "o", "", "output file")
 	flag.StringVar(&dataFile, "d", "", "dataset file")
-	flag.StringVar(&convType, "t", biToCtree, "conversion type ("+strings.Join([]string{biToCtree, biToBif, xmlToBif}, "|")+")")
+	flag.StringVar(&convType, "t", biToCtree, "conversion type ("+strings.Join([]string{biToCtree, biToBif, xmlToBif, biToXML}, "|")+")")
 	flag.Parse()
 
 	if len(inFile) == 0 || len(outFile) == 0 {
@@ -57,6 +58,10 @@ func main() {
 		writeBif(ct, outFile)
 	case xmlToBif:
 		writeXMLToBif(inFile, outFile)
+	case biToXML:
+		potentials, _ := parseLTMbif(inFile, vs)
+		ct := buildCTree(potentials)
+		writeXML(ct, outFile)
 	default:
 		fmt.Printf("\n error: invalid conversion option: (%v)\n\n", convType)
 		flag.PrintDefaults()
@@ -347,4 +352,42 @@ func writeXMLToBif(inFile, outFile string) {
 	}
 
 	return
+}
+
+func writeXML(ct *model.CTree, fname string) {
+	f := ioutl.CreateFile(fname)
+	defer f.Close()
+	bn := XMLBIF{Net{}}
+	for _, v := range ct.Variables() {
+		bn.Network.Variables = append(bn.Network.Variables, Variable{Name: v.Name(), States: varStates(v)})
+	}
+	for _, nd := range ct.Nodes() {
+		p := Prob{}
+		if nd.Parent() == nil {
+			p.For = nd.Variables()[0].Name()
+			p.Table = strings.Join(conv.Sftoa(nd.Potential().Values()), " ")
+		} else {
+			vx := nd.Variables().Diff(nd.Parent().Variables())[0]
+			p.For = vx.Name()
+			pavx, pavl := []*vars.Var{vx}, vars.VarList{vx}
+			for _, u := range nd.Variables().Intersec(nd.Parent().Variables()) {
+				p.Given = append(p.Given, u.Name())
+				pavx = append(pavx, u)
+				pavl.Add(u)
+			}
+			ixf := vars.NewOrderedIndex(pavl, pavx)
+			values := nd.Potential().Values()
+			tableVals := make([]float64, len(values))
+			for i := 0; !ixf.Ended(); i++ {
+				tableVals[ixf.I()] = values[i]
+				ixf.Next()
+			}
+			p.Table = strings.Join(conv.Sftoa(tableVals), " ")
+		}
+		bn.Network.Probs = append(bn.Network.Probs, p)
+	}
+
+	data, err := xml.MarshalIndent(bn, "", "\t")
+	errchk.Check(err, "")
+	f.Write(data)
 }

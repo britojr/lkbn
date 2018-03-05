@@ -1,11 +1,14 @@
 package model
 
 import (
+	"encoding/xml"
 	"strings"
 
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/vars"
 	"github.com/britojr/utl/conv"
+	"github.com/britojr/utl/errchk"
+	"github.com/britojr/utl/ioutl"
 )
 
 // BNet defines a Bayesian network model
@@ -94,13 +97,40 @@ func ReadBNetXML(fname string) *BNet {
 
 // Write writes BNet on file
 func (b *BNet) Write(fname string) {
-	// f := ioutl.CreateFile(fname)
-	// d := []byte(c.String())
-	// fmt.Fprintf(f, "# Score: %v\n", c.score)
-	// fmt.Fprintf(f, "# BIC: %v\n", c.bic)
-	// f.Write(d)
-	// f.Close()
-	panic("Not implemented")
+	f := ioutl.CreateFile(fname)
+	defer f.Close()
+	bn := XMLBIF{Net{}}
+	for _, v := range b.Variables() {
+		bn.Network.Variables = append(bn.Network.Variables, Variable{Name: v.Name(), States: v.States()})
+		nd := b.Node(v)
+		p := Prob{}
+		if len(nd.Parents()) == 0 {
+			p.For = nd.Variable().Name()
+			p.Table = strings.Join(conv.Sftoa(nd.Potential().Values()), " ")
+		} else {
+			p.For = nd.Variable().Name()
+			pavx, pavl := []*vars.Var{nd.Variable()}, vars.VarList{nd.Variable()}
+			for _, u := range nd.Parents() {
+				p.Given = append(p.Given, u.Name())
+				pavx = append(pavx, u)
+				pavl.Add(u)
+			}
+			ixf := vars.NewOrderedIndex(pavl, pavx)
+			values := nd.Potential().Values()
+			tableVals := make([]float64, len(values))
+			for i := 0; !ixf.Ended(); i++ {
+				tableVals[ixf.I()] = values[i]
+				ixf.Next()
+			}
+			p.Table = strings.Join(conv.Sftoa(tableVals), " ")
+		}
+		bn.Network.Probs = append(bn.Network.Probs, p)
+	}
+
+	data, err := xml.MarshalIndent(bn, "", "\t")
+	errchk.Check(err, "")
+	f.Write([]byte(xml.Header))
+	f.Write(data)
 }
 
 // MarginalizedFamily returns the marginalized family of x:  P(x, pax)

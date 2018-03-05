@@ -1,6 +1,9 @@
 package vars
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 const (
 	// DefaultNState default number of states for a variable
@@ -68,4 +71,11 @@ func (v *Var) SetLatent(latent bool) {
 
 func (v Var) String() string {
 	return fmt.Sprintf("%v[%v]", v.name, v.nstate)
+}
+
+func (v Var) States() (s []string) {
+	for i := 0; i < v.NState(); i++ {
+		s = append(s, strconv.Itoa(i))
+	}
+	return
 }

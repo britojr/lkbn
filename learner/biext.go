@@ -8,6 +8,7 @@ import (
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
+	"github.com/britojr/utl/conv"
 )
 
 // BIextSearch implements the sampling strategy
@@ -16,6 +17,11 @@ type BIextSearch struct {
 	bn          *model.BNet
 	scoreRanker scr.Ranker
 	iterAlg     optimizer.Optimizer
+
+	maxTimeCl int
+	maxIterCl int
+
+	props map[string]string // save parameters map
 }
 
 // NewBIextSearch creates a instance of this stragegy
@@ -36,10 +42,14 @@ func (s *BIextSearch) SetFileParameters(props map[string]string) {
 	if scoreFile, ok := props[ParmParentScores]; ok {
 		s.scoreRanker = scr.CreateRanker(scr.Read(scoreFile), s.tw)
 	}
-	s.iterAlg = optimizer.NewIterativeSearch(s.scoreRanker)
-	s.iterAlg.SetDefaultParameters()
-	s.iterAlg.SetFileParameters(props)
-	s.iterAlg.ValidateParameters()
+	s.props = props
+	// s.initOptimizer()
+	if maxTimeCl, ok := props[ParmMaxTimeCluster]; ok {
+		s.maxTimeCl = conv.Atoi(maxTimeCl)
+	}
+	if maxIterCl, ok := props[ParmMaxIterCluster]; ok {
+		s.maxIterCl = conv.Atoi(maxIterCl)
+	}
 }
 
 // Search searches for a network structure
@@ -60,24 +70,32 @@ func (s *BIextSearch) Search() Solution {
 			}
 		}
 		fmt.Println(chs)
-		fmt.Println(listIDs(chs))
+		s.initOptimizer() // TODO: create a new optimizer because unwanted colateral from timeout
 		s.iterAlg.(*optimizer.IterativeSearch).SetVarsSubSet(listIDs(chs))
-		bnStruct := optimizer.Search(s.iterAlg, 0, 10)
+		bnStruct := optimizer.Search(s.iterAlg, s.maxIterCl, s.maxTimeCl)
 		for _, u := range chs {
 			nd := model.NewBNode(u)
-			bn.AddNode(nd)
+			parents := bnStruct.Parents(u.ID()).DumpAsInts()
 			scope := vars.VarList{u}
 			scope.Add(v)
-			for _, id := range bnStruct.Parents(u.ID()).DumpAsInts() {
+			for _, id := range parents {
 				scope.Add(vs.FindByID(id))
 			}
 			nd.SetPotential(factor.New(scope...))
+			bn.AddNode(nd)
 		}
 		queue = queue[1:]
 	}
 	// log.Printf("--------------------------------------------------\n")
 	// log.Printf("LL: %.6f\n", bn.Score())
 	return bn
+}
+
+func (s *BIextSearch) initOptimizer() {
+	s.iterAlg = optimizer.NewIterativeSearch(s.scoreRanker)
+	s.iterAlg.SetDefaultParameters()
+	s.iterAlg.SetFileParameters(s.props)
+	s.iterAlg.ValidateParameters()
 }
 
 func findRoot(bn *model.BNet) *vars.Var {

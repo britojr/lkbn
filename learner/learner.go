@@ -22,6 +22,9 @@ const (
 	ParmLatentVars   = "latent_vars"   // latent variables cardinalities
 	ParmParentScores = "parent_scores" // precomputed parent scores file
 	ParmInputNet     = "input_net"     // tree network previously learned
+
+	ParmMaxTimeCluster = "max_time_per_cluster"
+	ParmMaxIterCluster = "max_iter_per_cluster"
 )
 
 // Learner defines a structure learner algorithm

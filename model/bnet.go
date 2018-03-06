@@ -16,6 +16,7 @@ type BNet struct {
 	vs    vars.VarList
 	nodes map[*vars.Var]*BNode
 	score float64
+	ct    *CTree
 }
 
 // NewBNet creates a new BNet model
@@ -47,9 +48,14 @@ func (b *BNet) SetScore(score float64) {
 	b.score = score
 }
 
-// ToCTree return a ctree for this bnet
+// CTree return a ctree for this bnet
 func (b *BNet) CTree() *CTree {
-	panic("not implemented")
+	return b.ct
+}
+
+// SetCTree sets bnet ctree
+func (b *BNet) SetCTree(ct *CTree) {
+	b.ct = ct
 }
 
 // Node return the respective node of a var

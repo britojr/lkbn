@@ -3,10 +3,12 @@ package model
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/britojr/btbn/ktree"
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/vars"
+	"github.com/britojr/utl/conv"
 	"github.com/britojr/utl/errchk"
 	"github.com/britojr/utl/ioutl"
 	yaml "gopkg.in/yaml.v2"
@@ -40,15 +42,15 @@ func NewCTree() *CTree {
 	return new(CTree)
 }
 
-// ReadCTree creates new CTree from file
-func ReadCTree(fname string) (c *CTree) {
+// ReadCTreeYAML creates new CTree from yaml file
+func ReadCTreeYAML(fname string) (c *CTree) {
 	data, err := ioutil.ReadFile(fname)
 	errchk.Check(err, "")
 	return CTreeFromString(string(data))
 }
 
-// Write writes CTree on file
-func (c *CTree) Write(fname string) {
+// WriteYAML writes CTree on file
+func (c *CTree) WriteYAML(fname string) {
 	f := ioutl.CreateFile(fname)
 	d := []byte(c.String())
 	fmt.Fprintf(f, "# Score: %v\n", c.score)
@@ -137,6 +139,43 @@ func (c *CTree) String() string {
 	d, err := yaml.Marshal(&t)
 	errchk.Check(err, "")
 	return string(d)
+}
+
+// XMLStruct creates a struct that can be marshalled into xmlbif format
+func (c *CTree) XMLStruct() (ctStruct Network) {
+	vs := c.Variables()
+	for _, v := range vs {
+		ctStruct.Variables = append(ctStruct.Variables, Variable{Name: v.Name(), States: v.States()})
+	}
+	for _, nd := range c.Nodes() {
+		p := Prob{}
+		if nd.Parent() == nil {
+			for _, x := range nd.Variables() {
+				p.For = append(p.For, x.Name())
+			}
+			p.Table = strings.Join(conv.Sftoa(nd.Potential().Values()), " ")
+		} else {
+			pavx := []*vars.Var{}
+			for _, x := range nd.Variables().Diff(nd.Parent().Variables()) {
+				p.For = append(p.For, x.Name())
+				pavx = append(pavx, x)
+			}
+			for _, u := range nd.Variables().Intersec(nd.Parent().Variables()) {
+				p.Given = append(p.Given, u.Name())
+				pavx = append(pavx, u)
+			}
+			ixf := vars.NewOrderedIndex(nd.Variables(), pavx)
+			values := nd.Potential().Values()
+			tableVals := make([]float64, len(values))
+			for i := 0; !ixf.Ended(); i++ {
+				tableVals[ixf.I()] = values[i]
+				ixf.Next()
+			}
+			p.Table = strings.Join(conv.Sftoa(tableVals), " ")
+		}
+		ctStruct.Probs = append(ctStruct.Probs, p)
+	}
+	return
 }
 
 // SampleUniform uniformly samples a ktree

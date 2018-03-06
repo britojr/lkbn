@@ -31,8 +31,8 @@ func TestReadWrite(t *testing.T) {
 		f, err := ioutil.TempFile("", "")
 		errchk.Check(err, "")
 		f.Close()
-		cta.Write(f.Name())
-		ctb := ReadCTree(f.Name())
+		cta.WriteYAML(f.Name())
+		ctb := ReadCTreeYAML(f.Name())
 		// fmt.Println(ctb)
 
 		queue := []*CTNode{cta.Root()}

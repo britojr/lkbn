@@ -217,10 +217,7 @@ func ReadCTreeXML(fname string) *CTree {
 		if len(p.Given) == 0 {
 			c.root = nd
 		} else {
-			pa := c.FindNodeContaining(scope)
-			for pa.Parent() != nil && pa.Parent().Variables().Contains(scope) {
-				pa = pa.Parent()
-			}
+			pa := c.FindHighestNodeContaining(scope)
 			pa.AddChild(nd)
 		}
 		ixf := vars.NewOrderedIndex(pavx, pavl)
@@ -446,6 +443,18 @@ func (c *CTree) FindNodeContaining(vs vars.VarList) *CTNode {
 		}
 	}
 	return nil
+}
+
+// FindHighestNodeContaining returns the highest node that contains the given variables
+func (c *CTree) FindHighestNodeContaining(vs vars.VarList) (nd *CTNode) {
+	nd = c.FindNodeContaining(vs)
+	if nd == nil {
+		return
+	}
+	for nd.Parent() != nil && nd.Parent().Variables().Contains(vs) {
+		nd = nd.Parent()
+	}
+	return
 }
 
 // CTNode defines a clique tree node

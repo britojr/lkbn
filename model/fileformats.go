@@ -25,6 +25,7 @@ type Network struct {
 type Variable struct {
 	Name   string   `xml:"NAME"`
 	States []string `xml:"OUTCOME"`
+	Latent string   `xml:"LATENT"`
 }
 
 // Prob conditional probability in xmlbif

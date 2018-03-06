@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"strings"
 
 	"github.com/britojr/btbn/ktree"
@@ -158,7 +159,8 @@ func (c *CTree) String() string {
 func (c *CTree) XMLStruct() (ctStruct Network) {
 	vs := c.Variables()
 	for _, v := range vs {
-		ctStruct.Variables = append(ctStruct.Variables, Variable{Name: v.Name(), States: v.States()})
+		ctStruct.Variables = append(ctStruct.Variables, Variable{
+			Name: v.Name(), States: v.States(), Latent: strconv.FormatBool(v.Latent())})
 	}
 	for _, nd := range c.Nodes() {
 		p := Prob{}
@@ -189,6 +191,49 @@ func (c *CTree) XMLStruct() (ctStruct Network) {
 		ctStruct.Probs = append(ctStruct.Probs, p)
 	}
 	return
+}
+
+// ReadCTreeXML creates new CTree from xmlbif file
+func ReadCTreeXML(fname string) *CTree {
+	c := new(CTree)
+	xmlct := readXMLBIF(fname).CTreeXML
+	vm := make(map[string]*vars.Var)
+	for i, xv := range xmlct.Variables {
+		v := vars.New(i, len(xv.States), xv.Name, conv.Atob(xv.Latent))
+		vm[xv.Name] = v
+	}
+	for _, p := range xmlct.Probs {
+		nd := new(CTNode)
+		pavx, pavl, scope := []*vars.Var{}, vars.VarList{}, vars.VarList{}
+		for _, name := range p.For {
+			pavx = append(pavx, vm[name])
+			pavl.Add(vm[name])
+		}
+		for _, name := range p.Given {
+			pavx = append(pavx, vm[name])
+			pavl.Add(vm[name])
+			scope.Add(vm[name])
+		}
+		if len(p.Given) == 0 {
+			c.root = nd
+		} else {
+			pa := c.FindNodeContaining(scope)
+			for pa.Parent() != nil && pa.Parent().Variables().Contains(scope) {
+				pa = pa.Parent()
+			}
+			pa.AddChild(nd)
+		}
+		ixf := vars.NewOrderedIndex(pavx, pavl)
+		tableVals := conv.Satof(strings.Fields(strings.Trim(p.Table, " ")))
+		values := make([]float64, len(tableVals))
+		for i := 0; !ixf.Ended(); i++ {
+			values[i] = tableVals[ixf.I()]
+			ixf.Next()
+		}
+		nd.pot = factor.New(pavl...).SetValues(values)
+		c.nodes = append(c.nodes, nd)
+	}
+	return c
 }
 
 // SampleUniform uniformly samples a ktree

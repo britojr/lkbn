@@ -45,7 +45,7 @@ func main() {
 	eml.SetProperties(props)
 	eml.PrintProperties()
 	for _, ctFile := range ctreefs {
-		ct := model.ReadCTree(ctFile)
+		ct := model.ReadCTreeYAML(ctFile)
 		start := time.Now()
 		ct, ll, it := eml.Run(ct, ds.IntMaps())
 		elapsed := time.Since(start)
@@ -60,6 +60,6 @@ func main() {
 		log.Printf("Linked MI: %.6f\n", learner.ComputeMIScore(ct, mutInfo))
 		log.Printf("--------------------------------------------------\n")
 
-		ct.Write(ctFile)
+		ct.WriteYAML(ctFile)
 	}
 }

@@ -135,7 +135,7 @@ nodes:
 
 func TestPosterior2(t *testing.T) {
 	ctreeFile := ioutl.TempFile("inference_test", ctreeN5K3)
-	ct := model.ReadCTree(ctreeFile)
+	ct := model.ReadCTreeYAML(ctreeFile)
 	pjoint := ct.Nodes()[0].Potential().Copy()
 	for _, nd := range ct.Nodes()[1:] {
 		pjoint.Times(nd.Potential())

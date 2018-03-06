@@ -51,7 +51,7 @@ func main() {
 	case biToCtree:
 		potentials, _ := parseLTMbif(inFile, vs)
 		ct := buildCTree(potentials)
-		ct.Write(outFile)
+		ct.WriteYAML(outFile)
 	case biToBif:
 		potentials, _ := parseLTMbif(inFile, vs)
 		ct := buildCTree(potentials)

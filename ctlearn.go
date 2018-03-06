@@ -114,7 +114,7 @@ func runCTParamLearner() {
 	dataSet := data.NewDataset(dataFile)
 
 	log.Println("Reading model structure")
-	ct := model.ReadCTree(modelFIn)
+	ct := model.ReadCTreeYAML(modelFIn)
 	log.Println("Initializong parameter learner")
 	eml := emlearner.New()
 	eml.SetProperties(props)

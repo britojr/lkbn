@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -57,6 +58,18 @@ func (c *CTree) WriteYAML(fname string) {
 	fmt.Fprintf(f, "# BIC: %v\n", c.bic)
 	f.Write(d)
 	f.Close()
+}
+
+// Write writes CTree in xmlbif format
+func (c *CTree) Write(fname string) {
+	f := ioutl.CreateFile(fname)
+	defer f.Close()
+	xmlData := XMLBIF{}
+	xmlData.CTreeXML = c.XMLStruct()
+	data, err := xml.MarshalIndent(xmlData, "", "\t")
+	errchk.Check(err, "")
+	f.Write([]byte(xml.Header))
+	f.Write(data)
 }
 
 // CTreeFromString creates new CTree from string

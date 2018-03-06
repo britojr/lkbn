@@ -35,7 +35,7 @@ func main() {
 	dname := strings.TrimSuffix(dataFile, path.Ext(dataFile))
 	ctreefs, _ := filepath.Glob(fmt.Sprintf("%v*.ctree", dname))
 	for _, ctFile := range ctreefs {
-		ct := model.ReadCTree(ctFile)
+		ct := model.ReadCTreeYAML(ctFile)
 		mi := computeMIScore(ct, mutInfo)
 
 		log.Printf("========== SOLUTION ==============================\n")

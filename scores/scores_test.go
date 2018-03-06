@@ -136,7 +136,7 @@ func TestKLDiv(t *testing.T) {
 	orgFile := ioutl.TempFile("kldiv_test", bnetN5K3)
 	compFile := ioutl.TempFile("kldiv_test", ctreeN5K3)
 	orgNet := model.ReadBNetXML(orgFile)
-	compNet := model.ReadCTree(compFile)
+	compNet := model.ReadCTreeYAML(compFile)
 	want := 0.0
 	got := KLDiv(orgNet, compNet)
 	if !floats.AlmostEqual(want, got, tol) {
@@ -148,7 +148,7 @@ func TestKLDivBruteForce(t *testing.T) {
 	orgFile := ioutl.TempFile("kldiv_test", bnetN5K3)
 	compFile := ioutl.TempFile("kldiv_test", ctreeN5K3)
 	orgNet := model.ReadBNetXML(orgFile)
-	compNet := model.ReadCTree(compFile)
+	compNet := model.ReadCTreeYAML(compFile)
 	want := 0.0
 	got := KLDivBruteForce(orgNet, compNet)
 	if !floats.AlmostEqual(want, got, tol) {

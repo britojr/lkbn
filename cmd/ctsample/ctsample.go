@@ -68,7 +68,7 @@ func main() {
 		ct := model.SampleUniform(vs, tw)
 		mi := learner.ComputeMIScore(ct, mutInfo)
 		if mi > 19 {
-			ct.Write(modelFOut)
+			ct.WriteYAML(modelFOut)
 			i++
 			fmt.Printf("%v: %v\n", i, mi)
 		}

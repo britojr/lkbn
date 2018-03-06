@@ -48,7 +48,7 @@ func (b *BNet) SetScore(score float64) {
 }
 
 // ToCTree return a ctree for this bnet
-func (b *BNet) ToCTree() *CTree {
+func (b *BNet) CTree() *CTree {
 	panic("not implemented")
 }
 
@@ -65,13 +65,14 @@ func (b *BNet) Variables() vars.VarList {
 // ReadBNetXML creates new BNet from xmlbif file
 func ReadBNetXML(fname string) *BNet {
 	b := NewBNet()
-	xmlbn := readXMLBIF(fname)
+	xmlfile := readXMLBIF(fname)
+	xmlbn := xmlfile.BNetXML
 	for i, v := range xmlbn.Variables {
 		u := vars.New(i, len(v.States), v.Name, false)
 		b.vs.Add(u)
 	}
 	for _, p := range xmlbn.Probs {
-		vx := b.vs.FindByName(p.For)
+		vx := b.vs.FindByName(p.For[0])
 		if len(p.Given) == 0 {
 			values := conv.Satof(strings.Fields(strings.Trim(p.Table, " ")))
 			b.nodes[vx] = &BNode{vx, factor.New(vx).SetValues(values)}
@@ -95,27 +96,22 @@ func ReadBNetXML(fname string) *BNet {
 	return b
 }
 
-// Write writes BNet on file
-func (b *BNet) Write(fname string) {
-	f := ioutl.CreateFile(fname)
-	defer f.Close()
-	bn := XMLBIF{Net{}}
+// XMLStruct creates a struct that can be marshalled into xmlbif format
+func (b *BNet) XMLStruct() (bnStruct Network) {
 	for _, v := range b.Variables() {
-		bn.Network.Variables = append(bn.Network.Variables, Variable{Name: v.Name(), States: v.States()})
+		bnStruct.Variables = append(bnStruct.Variables, Variable{Name: v.Name(), States: v.States()})
 		nd := b.Node(v)
 		p := Prob{}
+		p.For = append(p.For, nd.Variable().Name())
 		if len(nd.Parents()) == 0 {
-			p.For = nd.Variable().Name()
 			p.Table = strings.Join(conv.Sftoa(nd.Potential().Values()), " ")
 		} else {
-			p.For = nd.Variable().Name()
-			pavx, pavl := []*vars.Var{nd.Variable()}, vars.VarList{nd.Variable()}
+			pavx := []*vars.Var{nd.Variable()}
 			for _, u := range nd.Parents() {
 				p.Given = append(p.Given, u.Name())
 				pavx = append(pavx, u)
-				pavl.Add(u)
 			}
-			ixf := vars.NewOrderedIndex(pavl, pavx)
+			ixf := vars.NewOrderedIndex(nd.Potential().Variables(), pavx)
 			values := nd.Potential().Values()
 			tableVals := make([]float64, len(values))
 			for i := 0; !ixf.Ended(); i++ {
@@ -124,10 +120,22 @@ func (b *BNet) Write(fname string) {
 			}
 			p.Table = strings.Join(conv.Sftoa(tableVals), " ")
 		}
-		bn.Network.Probs = append(bn.Network.Probs, p)
+		bnStruct.Probs = append(bnStruct.Probs, p)
 	}
+	return
+}
 
-	data, err := xml.MarshalIndent(bn, "", "\t")
+// Write writes BNet on file
+func (b *BNet) Write(fname string) {
+	f := ioutl.CreateFile(fname)
+	defer f.Close()
+	xmlData := XMLBIF{}
+	xmlData.BNetXML = b.XMLStruct()
+	ct := b.CTree()
+	if ct != nil {
+		xmlData.CTreeXML = ct.XMLStruct()
+	}
+	data, err := xml.MarshalIndent(xmlData, "", "\t")
 	errchk.Check(err, "")
 	f.Write([]byte(xml.Header))
 	f.Write(data)

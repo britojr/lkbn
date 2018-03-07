@@ -15,7 +15,7 @@ import (
 // BNet defines a Bayesian network model
 type BNet struct {
 	vs    vars.VarList
-	nodes map[*vars.Var]*BNode
+	nodes map[string]*BNode
 	score float64
 	ct    *CTree
 }
@@ -24,14 +24,14 @@ type BNet struct {
 func NewBNet() *BNet {
 	b := new(BNet)
 	b.vs = []*vars.Var{}
-	b.nodes = make(map[*vars.Var]*BNode)
+	b.nodes = make(map[string]*BNode)
 	return b
 }
 
 // AddNode adds node to current bn
 func (b *BNet) AddNode(nd *BNode) {
 	b.vs.Add(nd.vx)
-	b.nodes[nd.vx] = nd
+	b.nodes[nd.vx.Name()] = nd
 }
 
 // Better ..
@@ -61,7 +61,7 @@ func (b *BNet) SetCTree(ct *CTree) {
 
 // Node return the respective node of a var
 func (b *BNet) Node(v *vars.Var) *BNode {
-	return b.nodes[v]
+	return b.nodes[v.Name()]
 }
 
 // Variables returns bnet variables
@@ -82,7 +82,7 @@ func ReadBNetXML(fname string) *BNet {
 		vx := b.vs.FindByName(p.For[0])
 		if len(p.Given) == 0 {
 			values := conv.Satof(strings.Fields(strings.Trim(p.Table, " ")))
-			b.nodes[vx] = &BNode{vx, factor.New(vx).SetValues(values)}
+			b.nodes[vx.Name()] = &BNode{vx, factor.New(vx).SetValues(values)}
 		} else {
 			pavx, pavl := []*vars.Var{vx}, vars.VarList{vx}
 			for _, name := range p.Given {
@@ -97,7 +97,7 @@ func ReadBNetXML(fname string) *BNet {
 				values[i] = tableVals[ixf.I()]
 				ixf.Next()
 			}
-			b.nodes[vx] = &BNode{vx, factor.New(pavl...).SetValues(values)}
+			b.nodes[vx.Name()] = &BNode{vx, factor.New(pavl...).SetValues(values)}
 		}
 	}
 	return b
@@ -150,17 +150,17 @@ func (b *BNet) Write(fname string) {
 
 // MarginalizedFamily returns the marginalized family of x:  P(x, pax)
 func (b *BNet) MarginalizedFamily(x *vars.Var) *factor.Factor {
-	f := b.nodes[x].cpt.Copy()
-	queue := b.nodes[x].Parents().Copy()
+	f := b.nodes[x.Name()].cpt.Copy()
+	queue := b.nodes[x.Name()].Parents().Copy()
 	visit := vars.VarList{}
 	for len(queue) > 0 {
 		pa := queue[0]
 		queue = queue[1:]
 		visit.Add(pa)
-		f.Times(b.nodes[pa].Potential())
-		queue = queue.Union(b.nodes[pa].Parents().Diff(visit))
+		f.Times(b.nodes[pa.Name()].Potential())
+		queue = queue.Union(b.nodes[pa.Name()].Parents().Diff(visit))
 	}
-	return f.Marginalize(b.nodes[x].cpt.Variables()...)
+	return f.Marginalize(b.nodes[x.Name()].cpt.Variables()...)
 }
 
 func (b *BNet) Equal(b2 *BNet) bool {
@@ -171,11 +171,6 @@ func (b *BNet) Equal(b2 *BNet) bool {
 		nd := b.Node(v)
 		nd2 := b2.Node(v)
 		if nd == nil || nd2 == nil {
-			fmt.Println("found nil")
-			fmt.Println(b.Variables())
-			fmt.Println(v)
-			fmt.Println(nd)
-			fmt.Println(nd2)
 			return false
 		}
 		if !nd.Equal(nd2) {
@@ -189,6 +184,7 @@ func (b *BNet) String() string {
 	s := ""
 	for _, v := range b.Variables() {
 		s += fmt.Sprintf("%v: %v\n", v, b.Node(v))
+		s += fmt.Sprintf("%v\n", b.Node(v).Potential().Values())
 	}
 	return s
 }

@@ -24,7 +24,6 @@ var (
 
 	// learn command
 	dataFile      string // dataset csv file
-	modelFile     string // network output file
 	parmFile      string // parameters file for search algorithms
 	learnerAlg    string // learner strategy
 	timeAvailable int    // time available to search solution
@@ -70,7 +69,7 @@ func initSubcommands() {
 	ctLearnComm.BoolVar(&verbose, "v", true, "prints detailed steps")
 	ctLearnComm.StringVar(&dataFile, "d", "", "dataset file in csv format")
 	ctLearnComm.StringVar(&parmFile, "p", "", "parameters file")
-	ctLearnComm.StringVar(&modelFile, "b", "", "network output file")
+	ctLearnComm.StringVar(&modelFOut, "bo", "", "network output file")
 	ctLearnComm.StringVar(&learnerAlg, "a", learner.AlgCTSampleSearch,
 		"learner algorithm ("+strings.Join([]string{
 			learner.AlgCTSampleSearch, learner.AlgCTBridgeSearch, learner.AlgBIextSearch,

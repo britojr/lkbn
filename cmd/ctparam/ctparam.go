@@ -39,13 +39,13 @@ func main() {
 	}
 
 	dname := strings.TrimSuffix(dataFile, path.Ext(dataFile))
-	ctreefs, _ := filepath.Glob(fmt.Sprintf("%v*.ctree", dname))
+	ctreefs, _ := filepath.Glob(fmt.Sprintf("%v*.xml", dname))
 
 	eml := emlearner.New()
 	eml.SetProperties(props)
 	eml.PrintProperties()
 	for _, ctFile := range ctreefs {
-		ct := model.ReadCTreeYAML(ctFile)
+		ct := model.ReadCTreeXML(ctFile)
 		start := time.Now()
 		ct, ll, it := eml.Run(ct, ds.IntMaps())
 		elapsed := time.Since(start)
@@ -60,6 +60,6 @@ func main() {
 		log.Printf("Linked MI: %.6f\n", learner.ComputeMIScore(ct, mutInfo))
 		log.Printf("--------------------------------------------------\n")
 
-		ct.WriteYAML(ctFile)
+		ct.Write(ctFile)
 	}
 }

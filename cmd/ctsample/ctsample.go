@@ -64,11 +64,11 @@ func main() {
 	dname := strings.TrimSuffix(dataFile, path.Ext(dataFile))
 	i := 0
 	for i < numSamples {
-		modelFOut := fmt.Sprintf("%s#%04d.ctree", dname, i)
+		modelFOut := fmt.Sprintf("%s#%04d.xml", dname, i)
 		ct := model.SampleUniform(vs, tw)
 		mi := learner.ComputeMIScore(ct, mutInfo)
 		if mi > 19 {
-			ct.WriteYAML(modelFOut)
+			ct.Write(modelFOut)
 			i++
 			fmt.Printf("%v: %v\n", i, mi)
 		}

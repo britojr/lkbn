@@ -27,7 +27,7 @@ func main() {
 	log.Printf("Comparing %v || %v\n", orgFile, compFile)
 
 	orgNet := model.ReadBNetXML(orgFile)
-	compNet := model.ReadCTreeYAML(compFile)
+	compNet := model.ReadCTreeXML(compFile)
 
 	log.Printf("KL-Divergence: %E\n", scores.KLDiv(orgNet, compNet))
 	log.Printf("KLDiv brute force: %E\n", scores.KLDivBruteForce(orgNet, compNet))

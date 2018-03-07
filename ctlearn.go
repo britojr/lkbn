@@ -53,7 +53,7 @@ func runCTLearner() {
 	log.Printf("Max. iterations: %v\n", numSolutions)
 	log.Printf("Max. time available (sec): %v\n", timeAvailable)
 	log.Printf("Parameters file: '%v'\n", parmFile)
-	log.Printf("Save solution in: '%v'\n", modelFile)
+	log.Printf("Save solution in: '%v'\n", modelFOut)
 	log.Printf("--------------------------------------------------\n")
 
 	props := make(map[string]string)
@@ -92,8 +92,8 @@ func runCTLearner() {
 	log.Printf("LogLikelihood: %.6f\n", m.Score())
 	log.Printf("--------------------------------------------------\n")
 
-	if len(modelFile) > 0 {
-		writeSolution(modelFile, m.(model.Model), alg)
+	if len(modelFOut) > 0 {
+		writeSolution(modelFOut, m.(model.Model), alg)
 	}
 }
 
@@ -114,7 +114,7 @@ func runCTParamLearner() {
 	dataSet := data.NewDataset(dataFile)
 
 	log.Println("Reading model structure")
-	ct := model.ReadCTreeYAML(modelFIn)
+	ct := model.ReadCTreeXML(modelFIn)
 	log.Println("Initializong parameter learner")
 	eml := emlearner.New()
 	eml.SetProperties(props)

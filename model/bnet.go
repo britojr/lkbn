@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/xml"
+	"fmt"
 	"strings"
 
 	"github.com/britojr/lkbn/factor"
@@ -103,9 +104,9 @@ func ReadBNetXML(fname string) *BNet {
 }
 
 // XMLStruct creates a struct that can be marshalled into xmlbif format
-func (b *BNet) XMLStruct() (bnStruct Network) {
+func (b *BNet) XMLStruct() (xmlStruct Network) {
 	for _, v := range b.Variables() {
-		bnStruct.Variables = append(bnStruct.Variables, Variable{Name: v.Name(), States: v.States()})
+		xmlStruct.Variables = append(xmlStruct.Variables, Variable{Name: v.Name(), States: v.States()})
 		nd := b.Node(v)
 		p := Prob{}
 		p.For = append(p.For, nd.Variable().Name())
@@ -126,7 +127,7 @@ func (b *BNet) XMLStruct() (bnStruct Network) {
 			}
 			p.Table = strings.Join(conv.Sftoa(tableVals), " ")
 		}
-		bnStruct.Probs = append(bnStruct.Probs, p)
+		xmlStruct.Probs = append(xmlStruct.Probs, p)
 	}
 	return
 }
@@ -162,6 +163,36 @@ func (b *BNet) MarginalizedFamily(x *vars.Var) *factor.Factor {
 	return f.Marginalize(b.nodes[x].cpt.Variables()...)
 }
 
+func (b *BNet) Equal(b2 *BNet) bool {
+	if !b.Variables().Equal(b2.Variables()) {
+		return false
+	}
+	for _, v := range b.Variables() {
+		nd := b.Node(v)
+		nd2 := b2.Node(v)
+		if nd == nil || nd2 == nil {
+			fmt.Println("found nil")
+			fmt.Println(b.Variables())
+			fmt.Println(v)
+			fmt.Println(nd)
+			fmt.Println(nd2)
+			return false
+		}
+		if !nd.Equal(nd2) {
+			return false
+		}
+	}
+	return true
+}
+
+func (b *BNet) String() string {
+	s := ""
+	for _, v := range b.Variables() {
+		s += fmt.Sprintf("%v: %v\n", v, b.Node(v))
+	}
+	return s
+}
+
 // BNode defines a BN node
 type BNode struct {
 	vx  *vars.Var
@@ -191,4 +222,15 @@ func (nd *BNode) Parents() vars.VarList {
 // Potential return node potential
 func (nd *BNode) Potential() *factor.Factor {
 	return nd.cpt
+}
+
+func (nd *BNode) Equal(nd2 *BNode) bool {
+	if nd.vx.ID() != nd2.vx.ID() {
+		return false
+	}
+	return nd.cpt.Equal(nd2.cpt)
+}
+
+func (nd *BNode) String() string {
+	return fmt.Sprintf("%v|%v", nd.vx, nd.Parents())
 }

@@ -1,11 +1,13 @@
 package model
 
 import (
+	"io/ioutil"
 	"reflect"
 	"testing"
 
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/vars"
+	"github.com/britojr/utl/errchk"
 	"github.com/britojr/utl/ioutl"
 	"gonum.org/v1/gonum/floats"
 )
@@ -108,6 +110,95 @@ func TestReadBNetXML(t *testing.T) {
 		}
 		if !reflect.DeepEqual(b.Node(v).Potential().Values(), fs[i].Values()) {
 			t.Errorf("wrong node values %v != %v", b.Node(v).Potential().Values(), fs[i].Values())
+		}
+	}
+}
+
+func TestBNetReadWrite(t *testing.T) {
+	vs := []*vars.Var{
+		vars.New(0, 2, "node0", false), vars.New(1, 2, "node1", false), vars.New(2, 2, "node2", false),
+		vars.New(3, 2, "node3", false), vars.New(4, 2, "node4", false),
+	}
+	fs := []*factor.Factor{
+		factor.New(vs[0]).SetValues([]float64{0.587, 0.413}),
+		factor.New(vs[0], vs[1]).SetValues([]float64{0.8052, 0.6901, 0.1948, 0.3099}),
+		factor.New(vs[0], vs[1], vs[2]).SetValues([]float64{0.3264, 0.3579, 0.5806, 0.5468, 0.6736, 0.6421, 0.4194, 0.4532}),
+		factor.New(vs[0], vs[1], vs[3], vs[4]).SetValues([]float64{
+			0.948, 0.0517, 0.8135, 0.7964, 0.052, 0.9483, 0.1865, 0.2036, 0.5574, 0.3416, 0.2107, 0.5683, 0.4426, 0.6584, 0.7893, 0.4317,
+		}),
+		factor.New(vs[0], vs[4]).SetValues([]float64{0.0249, 0.6028, 0.9751, 0.3972}),
+	}
+	b1 := NewBNet()
+	for i, f := range fs {
+		nd := NewBNode(vs[i])
+		nd.SetPotential(f)
+		b1.AddNode(nd)
+	}
+	fp, err := ioutil.TempFile("", "")
+	errchk.Check(err, "")
+	fp.Close()
+
+	b1.Write(fp.Name())
+	// b2 := ReadBNetXML(fp.Name())
+	// if b2 == nil {
+	// 	t.Errorf("error reading structure: got nil!\n")
+	// }
+	// if !b1.Equal(b2) {
+	// 	t.Errorf("problem saving/reading structure:\n%v\n!=\n%v\n", b1, b2)
+	// }
+}
+
+func TestBNEqual(t *testing.T) {
+	vs := []*vars.Var{
+		vars.New(0, 2, "node0", false), vars.New(1, 2, "node1", false), vars.New(2, 2, "node2", false),
+		vars.New(3, 2, "node3", false), vars.New(4, 2, "node4", false),
+	}
+	fs := []*factor.Factor{
+		factor.New(vs[0]).SetValues([]float64{0.587, 0.413}),
+		factor.New(vs[0], vs[1]).SetValues([]float64{0.8052, 0.6901, 0.1948, 0.3099}),
+		factor.New(vs[0], vs[1], vs[2]).SetValues([]float64{0.3264, 0.3579, 0.5806, 0.5468, 0.6736, 0.6421, 0.4194, 0.4532}),
+		factor.New(vs[0], vs[1], vs[3], vs[4]).SetValues([]float64{
+			0.948, 0.0517, 0.8135, 0.7964, 0.052, 0.9483, 0.1865, 0.2036, 0.5574, 0.3416, 0.2107, 0.5683, 0.4426, 0.6584, 0.7893, 0.4317,
+		}),
+		factor.New(vs[0], vs[4]).SetValues([]float64{0.0249, 0.6028, 0.9751, 0.3972}),
+	}
+	b := []*BNet{NewBNet(), NewBNet(), NewBNet(), NewBNet()}
+	for i, f := range fs {
+		nd := NewBNode(vs[i])
+		nd.SetPotential(f.Copy())
+		b[0].AddNode(nd)
+	}
+	for i, f := range fs {
+		nd := NewBNode(vs[i])
+		nd.SetPotential(f.Copy())
+		b[1].AddNode(nd)
+	}
+	for i, f := range fs {
+		nd := NewBNode(vs[i])
+		nd.SetPotential(f.Copy().RandomDistribute())
+		b[2].AddNode(nd)
+	}
+	for i := range vs {
+		nd := NewBNode(vs[i])
+		nd.SetPotential(factor.New(vs[:i]...))
+		b[3].AddNode(nd)
+	}
+
+	if !b[0].Equal(b[1]) {
+		t.Errorf("b0 should equal b1\n%v\n!=\n%v\n", b[0], b[1])
+	}
+	if !b[1].Equal(b[0]) {
+		t.Errorf("b1 should equal b0 (symmetry)\n%v\n!=\n%v\n", b[1], b[0])
+	}
+	if b[1].Equal(b[2]) {
+		t.Errorf("b1 should differ b2\n%v\n!=\n%v\n", b[1], b[2])
+	}
+	if b[1].Equal(b[3]) {
+		t.Errorf("b1 should differ b3\n%v\n!=\n%v\n", b[1], b[3])
+	}
+	for i, bx := range b {
+		if !bx.Equal(bx) {
+			t.Errorf("b[%v] should be equal to itself\n%v\n", i, bx)
 		}
 	}
 }

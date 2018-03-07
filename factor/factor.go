@@ -15,6 +15,10 @@ var (
 	ErrZeroSum = errors.New("Normalization group add up to zero")
 )
 
+const (
+	eqtol = 1e-14
+)
+
 // Factor defines a function that maps a joint of categorical variables to float values
 // every factor operation, if not explicitly stated otherwise, modifies the given factor
 type Factor struct {
@@ -286,4 +290,11 @@ func (f *Factor) Get(e map[int]int) float64 {
 		}
 	}
 	return f.values[ind]
+}
+
+func (f *Factor) Equal(g *Factor) bool {
+	if !f.vs.Equal(g.vs) {
+		return false
+	}
+	return floats.EqualApprox(f.values, g.values, eqtol)
 }

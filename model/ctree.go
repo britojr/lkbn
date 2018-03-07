@@ -157,6 +157,7 @@ func (c *CTree) String() string {
 
 // XMLStruct creates a struct that can be marshalled into xmlbif format
 func (c *CTree) XMLStruct() (ctStruct Network) {
+	c.BfsNodes()
 	vs := c.Variables()
 	for _, v := range vs {
 		ctStruct.Variables = append(ctStruct.Variables, Variable{
@@ -204,7 +205,7 @@ func ReadCTreeXML(fname string) *CTree {
 	}
 	for _, p := range xmlct.Probs {
 		nd := new(CTNode)
-		pavx, pavl, scope := []*vars.Var{}, vars.VarList{}, vars.VarList{}
+		pavx, pavl, parents := []*vars.Var{}, vars.VarList{}, vars.VarList{}
 		for _, name := range p.For {
 			pavx = append(pavx, vm[name])
 			pavl.Add(vm[name])
@@ -212,19 +213,19 @@ func ReadCTreeXML(fname string) *CTree {
 		for _, name := range p.Given {
 			pavx = append(pavx, vm[name])
 			pavl.Add(vm[name])
-			scope.Add(vm[name])
+			parents.Add(vm[name])
 		}
 		if len(p.Given) == 0 {
 			c.root = nd
 		} else {
-			pa := c.FindHighestNodeContaining(scope)
+			pa := c.FindHighestNodeContaining(parents)
 			pa.AddChild(nd)
 		}
 		ixf := vars.NewOrderedIndex(pavx, pavl)
 		tableVals := conv.Satof(strings.Fields(strings.Trim(p.Table, " ")))
 		values := make([]float64, len(tableVals))
 		for i := 0; !ixf.Ended(); i++ {
-			values[i] = tableVals[ixf.I()]
+			values[ixf.I()] = tableVals[i]
 			ixf.Next()
 		}
 		nd.pot = factor.New(pavl...).SetValues(values)

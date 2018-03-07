@@ -94,7 +94,7 @@ func ReadBNetXML(fname string) *BNet {
 			tableVals := conv.Satof(strings.Fields(strings.Trim(p.Table, " ")))
 			values := make([]float64, len(tableVals))
 			for i := 0; !ixf.Ended(); i++ {
-				values[i] = tableVals[ixf.I()]
+				values[ixf.I()] = tableVals[i]
 				ixf.Next()
 			}
 			b.nodes[vx.Name()] = &BNode{vx, factor.New(pavl...).SetValues(values)}
@@ -183,7 +183,7 @@ func (b *BNet) Equal(b2 *BNet) bool {
 func (b *BNet) String() string {
 	s := ""
 	for _, v := range b.Variables() {
-		s += fmt.Sprintf("%v: %v\n", v, b.Node(v))
+		s += fmt.Sprintf("%v: %v\n", v, b.Node(v).Potential().Variables())
 		s += fmt.Sprintf("%v\n", b.Node(v).Potential().Values())
 	}
 	return s

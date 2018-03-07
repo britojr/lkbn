@@ -59,9 +59,14 @@ var xmlbifNet1 = `<?xml version="1.0" encoding="UTF-8"?>
 </DEFINITION>
 <DEFINITION>
 	<FOR>node2</FOR>
+	<GIVEN>node0</GIVEN>
+	<GIVEN>node1</GIVEN>
+	<TABLE>0.3264 0.6736 0.3579 0.6421 0.5806 0.4194 0.5468 0.4532 </TABLE>
+	<!--
 	<GIVEN>node1</GIVEN>
 	<GIVEN>node0</GIVEN>
 	<TABLE>0.3264 0.6736 0.5806 0.4194 0.3579 0.6421 0.5468 0.4532 </TABLE>
+	-->
 </DEFINITION>
 <DEFINITION>
 	<FOR>node3</FOR>
@@ -101,15 +106,15 @@ func TestReadBNetXML(t *testing.T) {
 	if !b.Variables().Equal(vs) {
 		t.Errorf("wrong variables:\n%v\n%v\n", vs, b.Variables())
 	}
-	for i, v := range b.Variables() {
+	for i, v := range vs {
 		if b.Node(v).Variable().Name() != v.Name() {
 			t.Errorf("wrong node pivot %v != %v", b.Node(v).Variable().Name(), v.Name())
 		}
 		if !b.Node(v).Potential().Variables().Equal(fs[i].Variables()) {
-			t.Errorf("wrong node variables %v != %v", b.Node(v).Potential().Variables(), fs[i].Variables())
+			t.Errorf("wrong node variables\n%v\n!=\n%v\n", b.Node(v).Potential().Variables(), fs[i].Variables())
 		}
 		if !reflect.DeepEqual(b.Node(v).Potential().Values(), fs[i].Values()) {
-			t.Errorf("wrong node values %v != %v", b.Node(v).Potential().Values(), fs[i].Values())
+			t.Errorf("wrong node values\n%v\n!=\n%v\n", b.Node(v).Potential().Values(), fs[i].Values())
 		}
 	}
 }

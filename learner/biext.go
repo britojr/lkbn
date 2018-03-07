@@ -54,7 +54,8 @@ func (s *BIextSearch) SetFileParameters(props map[string]string) {
 
 // Search searches for a network structure
 func (s *BIextSearch) Search() Solution {
-	bn, _ := s.buildExtStructures()
+	bn, ct := s.buildExtStructures()
+	bn.SetCTree(ct)
 	// TODO:
 	// - learn parameters for clique tree
 	// - use the learned ctree to set bnet parameters
@@ -99,8 +100,6 @@ func listIDs(vs []*vars.Var) []int {
 }
 
 func (s *BIextSearch) buildExtStructures() (*model.BNet, *model.CTree) {
-	// TODO:
-	// - simutaneously create the cliquetree structure
 	queue := []*vars.Var{findRoot(s.bn)}
 	bn := model.NewBNet()
 	ct := model.NewCTree()
@@ -110,13 +109,7 @@ func (s *BIextSearch) buildExtStructures() (*model.BNet, *model.CTree) {
 		nd := model.NewBNode(v)
 		nd.SetPotential(s.bn.Node(v).Potential().Copy())
 		bn.AddNode(nd)
-		ctnd := model.NewCTNode()
-		ctnd.SetPotential(s.bn.Node(v).Potential().Copy())
-		pa := ct.FindNodeContaining(ctnd.Variables().Diff(vars.VarList{v}))
-		if pa != nil {
-			pa.AddChild(ctnd)
-		}
-		ct.AddNode(ctnd)
+		createCTNode(ct, nd.Potential().Copy(), nd.Potential().Variables().Diff(vars.VarList{v}))
 		chs := findChildren(s.bn, v)
 		for _, v := range chs {
 			if v.Latent() {
@@ -125,15 +118,19 @@ func (s *BIextSearch) buildExtStructures() (*model.BNet, *model.CTree) {
 			}
 		}
 		fmt.Println(chs)
-		// TODO: will need the used order to build the clique tree
 		s.initOptimizer() // TODO: create a new optimizer because unwanted colateral from timeout
 		s.iterAlg.(*optimizer.IterativeSearch).SetVarsSubSet(listIDs(chs))
 		bnStruct := optimizer.Search(s.iterAlg, s.maxIterCl, s.maxTimeCl)
+		ord := bnStruct.Topological()
 
-		ctSubRoot := model.NewCTNode()
-		ctSubRoot.SetPotential(factor.New())
-		ctnds := []*model.CTNode{}
-		invs := []*vars.Var{}
+		fmt.Println("structure")
+		fmt.Println(bnStruct)
+		fmt.Println("Ordering")
+		fmt.Println(ord)
+		fmt.Println()
+
+		scopes := make(map[int]vars.VarList)
+		fmt.Println("\tscopes:")
 		for _, u := range chs {
 			nd := model.NewBNode(u)
 			parents := bnStruct.Parents(u.ID()).DumpAsInts()
@@ -144,27 +141,35 @@ func (s *BIextSearch) buildExtStructures() (*model.BNet, *model.CTree) {
 			}
 			nd.SetPotential(factor.New(scope...))
 			bn.AddNode(nd)
-			if len(nd.Potential().Variables()) <= s.Treewidth() {
-				ctSubRoot.Potential().Times(nd.Potential())
-			} else {
-				ctnd := model.NewCTNode()
-				ctnd.SetPotential(nd.Potential().Copy())
-				ctnds = append(ctnds, ctnd)
-				invs = append(invs, u)
-			}
+			scopes[u.ID()] = nd.Potential().Variables()
+			fmt.Printf("\t[%v]: %v\n", u.Name(), scopes[u.ID()])
 		}
 
-		ctnd.AddChild(ctSubRoot)
-		ct.AddNode(ctSubRoot)
-		for i, ctnd := range ctnds {
-			pa := ct.FindNodeContaining(ctnd.Variables().Diff(vars.VarList{invs[i]}))
-			if pa != nil {
-				pa.AddChild(ctnd)
-			}
-			ct.AddNode(ctnd)
+		fmt.Println("\ttreeNodes:")
+		p := factor.New()
+		for _, v := range ord[:s.Treewidth()+1] {
+			p.Times(bn.Node(vs.FindByID(v)).Potential())
+		}
+		createCTNode(ct, p, vars.VarList{v})
+		fmt.Printf("\t[r]%v\n", p.Variables())
+		for _, v := range ord[s.Treewidth()+1:] {
+			u := vs.FindByID(v)
+			p := factor.New(scopes[u.ID()]...)
+			createCTNode(ct, p, scopes[u.ID()].Diff(vars.VarList{u}))
+			fmt.Printf("\t[%v]%v\n", u.Name(), p.Variables())
 		}
 
 		queue = queue[1:]
 	}
 	return bn, ct
+}
+
+func createCTNode(ct *model.CTree, pot *factor.Factor, parents vars.VarList) {
+	nd := model.NewCTNode()
+	nd.SetPotential(pot)
+	pa := ct.FindNodeContaining(parents)
+	if pa != nil {
+		pa.AddChild(nd)
+	}
+	ct.AddNode(nd)
 }

@@ -5,9 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/britojr/lkbn/data"
@@ -21,10 +19,9 @@ import (
 
 // conversion types
 const (
-	biToCtree = "bi-ctree"
-	biToBif   = "bi-bif"
-	xmlToBif  = "xml-bif"
-	biToXML   = "bi-xml"
+	biToBif  = "bi-bif"
+	biToXML  = "bi-xml"
+	xmlToBif = "xml-bif"
 )
 
 // converts an LTM in bif format to ctree format
@@ -33,7 +30,7 @@ func main() {
 	flag.StringVar(&inFile, "i", "", "input file")
 	flag.StringVar(&outFile, "o", "", "output file")
 	flag.StringVar(&dataFile, "d", "", "dataset file")
-	flag.StringVar(&convType, "t", biToCtree, "conversion type ("+strings.Join([]string{biToCtree, biToBif, xmlToBif, biToXML}, "|")+")")
+	flag.StringVar(&convType, "t", biToXML, "conversion type ("+strings.Join([]string{biToBif, biToXML, xmlToBif}, "|")+")")
 	flag.Parse()
 
 	if len(inFile) == 0 || len(outFile) == 0 {
@@ -48,20 +45,16 @@ func main() {
 		vs = []*vars.Var{}
 	}
 	switch convType {
-	case biToCtree:
-		potentials, _ := parseLTMbif(inFile, vs)
-		ct := buildCTree(potentials)
-		ct.WriteYAML(outFile)
 	case biToBif:
 		potentials, _ := parseLTMbif(inFile, vs)
 		ct := buildCTree(potentials)
 		writeBif(ct, outFile)
-	case xmlToBif:
-		writeXMLToBif(inFile, outFile)
 	case biToXML:
 		potentials, _ := parseLTMbif(inFile, vs)
 		ct := buildCTree(potentials)
 		writeXML(ct, outFile)
+	case xmlToBif:
+		writeXMLToBif(inFile, outFile)
 	default:
 		fmt.Printf("\n error: invalid conversion option: (%v)\n\n", convType)
 		flag.PrintDefaults()
@@ -76,7 +69,7 @@ func writeBif(ct *model.CTree, fname string) {
 	vs := ct.Variables()
 	for _, v := range vs {
 		fmt.Fprintf(f, "variable %v {\n", v.Name())
-		fmt.Fprintf(f, "  type discrete [ %v ] { %v };\n", v.NState(), strings.Join(varStates(v), ", "))
+		fmt.Fprintf(f, "  type discrete [ %v ] { %v };\n", v.NState(), strings.Join(v.States(), ", "))
 		fmt.Fprintf(f, "}\n")
 	}
 	nds := ct.Nodes()
@@ -91,7 +84,7 @@ func writeBif(ct *model.CTree, fname string) {
 				attrbMap := ixf.Attribution()
 				attrbStr := make([]string, 0, len(attrbMap))
 				for _, v := range pavs {
-					attrbStr = append(attrbStr, varStates(v)[attrbMap[v.ID()]])
+					attrbStr = append(attrbStr, v.States()[attrbMap[v.ID()]])
 				}
 				p := nd.Potential().Copy()
 				p.Reduce(attrbMap).SumOut(pavs...)
@@ -106,13 +99,6 @@ func writeBif(ct *model.CTree, fname string) {
 		}
 		fmt.Fprintf(f, "}\n")
 	}
-}
-
-func varStates(v *vars.Var) (s []string) {
-	for i := 0; i < v.NState(); i++ {
-		s = append(s, strconv.Itoa(i))
-	}
-	return
 }
 
 func varNames(vs vars.VarList) (s []string) {
@@ -145,7 +131,7 @@ func parseLTMbif(fname string, vs vars.VarList) ([]*factor.Factor, vars.VarList)
 		if w == "variable" {
 			fmt.Fscanf(fi, "%s", &name)
 			name = strings.Trim(name, "\"")
-			v := findVar(vs, name)
+			v := vs.FindByName(name)
 			if v == nil {
 				latent = false
 				if strings.Index(name, "variable") >= 0 {
@@ -165,13 +151,13 @@ func parseLTMbif(fname string, vs vars.VarList) ([]*factor.Factor, vars.VarList)
 			fmt.Fscanf(fi, "%s", &w)
 			fmt.Fscanf(fi, "%s", &name)
 			name = strings.Trim(name, "\"")
-			varOrd = append(varOrd, findVar(vs, name))
+			varOrd = append(varOrd, vs.FindByName(name))
 			clq.Add(varOrd[0])
 			fmt.Fscanf(fi, "%s", &w)
 			if w == "|" {
 				fmt.Fscanf(fi, "%s", &name)
 				name = strings.Trim(name, "\"")
-				varOrd = append(varOrd, findVar(vs, name))
+				varOrd = append(varOrd, vs.FindByName(name))
 				clq.Add(varOrd[1])
 			}
 
@@ -202,16 +188,6 @@ func parseLTMbif(fname string, vs vars.VarList) ([]*factor.Factor, vars.VarList)
 		_, err = fmt.Fscanf(fi, "%s", &w)
 	}
 	return pots, vs
-}
-
-func findVar(vs vars.VarList, name string) (v *vars.Var) {
-	for _, u := range vs {
-		if u.Name() == name {
-			v = u
-			break
-		}
-	}
-	return
 }
 
 func buildCTree(fs []*factor.Factor) *model.CTree {
@@ -271,44 +247,8 @@ func getMaxIntersec(f *factor.Factor, fs []*factor.Factor) (fi []*factor.Factor,
 	return
 }
 
-// XMLBIF defines xmlbif structure
-type XMLBIF struct {
-	Network Net `xml:"NETWORK"`
-}
-
-// Net defines network in xmlbif pattern
-type Net struct {
-	Name      string     `xml:"NAME"`
-	Variables []Variable `xml:"VARIABLE"`
-	Probs     []Prob     `xml:"DEFINITION"`
-}
-
-// Variable a variable in xmlbif
-type Variable struct {
-	Name   string   `xml:"NAME"`
-	States []string `xml:"OUTCOME"`
-}
-
-// Prob conditional probability in xmlbif
-type Prob struct {
-	For   string   `xml:"FOR"`
-	Given []string `xml:"GIVEN"`
-	Table string   `xml:"TABLE"`
-}
-
-func parseXMLBif(fname string) Net {
-	f := ioutl.OpenFile(fname)
-	defer f.Close()
-	b, err := ioutil.ReadAll(f)
-	errchk.Check(err, "")
-	var bn XMLBIF
-	err = xml.Unmarshal(b, &bn)
-	errchk.Check(err, "")
-	return bn.Network
-}
-
 func writeXMLToBif(inFile, outFile string) {
-	xmlbn := parseXMLBif(inFile)
+	xmlbn := model.ReadBNetXML(inFile).XMLStruct()
 
 	f := ioutl.CreateFile(outFile)
 	defer f.Close()
@@ -317,17 +257,17 @@ func writeXMLToBif(inFile, outFile string) {
 	for i, v := range xmlbn.Variables {
 		u := vars.New(i, len(v.States), v.Name, false)
 		fmt.Fprintf(f, "variable %v {\n", u.Name())
-		fmt.Fprintf(f, "  type discrete [ %v ] { %v };\n", u.NState(), strings.Join(varStates(u), ", "))
+		fmt.Fprintf(f, "  type discrete [ %v ] { %v };\n", u.NState(), strings.Join(u.States(), ", "))
 		fmt.Fprintf(f, "}\n")
 		vs.Add(u)
 	}
 	for _, p := range xmlbn.Probs {
 		if len(p.Given) > 0 {
 			fmt.Fprintf(f, "probability ( %v | %v ) {\n", p.For, strings.Join(p.Given, ", "))
-			xv := findVar(vs, p.For)
+			xv := vs.FindByName(p.For[0])
 			pavs := []*vars.Var{}
 			for _, name := range p.Given {
-				pavs = append(pavs, findVar(vs, name))
+				pavs = append(pavs, vs.FindByName(name))
 			}
 			ixf := vars.NewOrderedIndex(pavs, pavs)
 			k := 0
@@ -336,7 +276,7 @@ func writeXMLToBif(inFile, outFile string) {
 				attrbMap := ixf.Attribution()
 				attrbStr := make([]string, 0, len(attrbMap))
 				for _, v := range pavs {
-					attrbStr = append(attrbStr, varStates(v)[attrbMap[v.ID()]])
+					attrbStr = append(attrbStr, v.States()[attrbMap[v.ID()]])
 				}
 				tableInd := strings.Join(attrbStr, ", ")
 				tableVal := strings.Join(tableVals[k:k+xv.NState()], ", ")
@@ -357,35 +297,8 @@ func writeXMLToBif(inFile, outFile string) {
 func writeXML(ct *model.CTree, fname string) {
 	f := ioutl.CreateFile(fname)
 	defer f.Close()
-	bn := XMLBIF{Net{}}
-	for _, v := range ct.Variables() {
-		bn.Network.Variables = append(bn.Network.Variables, Variable{Name: v.Name(), States: varStates(v)})
-	}
-	for _, nd := range ct.Nodes() {
-		p := Prob{}
-		if nd.Parent() == nil {
-			p.For = nd.Variables()[0].Name()
-			p.Table = strings.Join(conv.Sftoa(nd.Potential().Values()), " ")
-		} else {
-			vx := nd.Variables().Diff(nd.Parent().Variables())[0]
-			p.For = vx.Name()
-			pavx, pavl := []*vars.Var{vx}, vars.VarList{vx}
-			for _, u := range nd.Variables().Intersec(nd.Parent().Variables()) {
-				p.Given = append(p.Given, u.Name())
-				pavx = append(pavx, u)
-				pavl.Add(u)
-			}
-			ixf := vars.NewOrderedIndex(pavl, pavx)
-			values := nd.Potential().Values()
-			tableVals := make([]float64, len(values))
-			for i := 0; !ixf.Ended(); i++ {
-				tableVals[ixf.I()] = values[i]
-				ixf.Next()
-			}
-			p.Table = strings.Join(conv.Sftoa(tableVals), " ")
-		}
-		bn.Network.Probs = append(bn.Network.Probs, p)
-	}
+
+	bn := model.XMLBIF{BNetXML: ct.XMLStruct()}
 
 	data, err := xml.MarshalIndent(bn, "", "\t")
 	errchk.Check(err, "")

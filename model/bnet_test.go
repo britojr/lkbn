@@ -139,13 +139,13 @@ func TestBNetReadWrite(t *testing.T) {
 	fp.Close()
 
 	b1.Write(fp.Name())
-	// b2 := ReadBNetXML(fp.Name())
-	// if b2 == nil {
-	// 	t.Errorf("error reading structure: got nil!\n")
-	// }
-	// if !b1.Equal(b2) {
-	// 	t.Errorf("problem saving/reading structure:\n%v\n!=\n%v\n", b1, b2)
-	// }
+	b2 := ReadBNetXML(fp.Name())
+	if b2 == nil {
+		t.Errorf("error reading structure: got nil!\n")
+	}
+	if !b1.Equal(b2) {
+		t.Errorf("problem saving/reading structure:\n%v\n!=\n%v\n", b1, b2)
+	}
 }
 
 func TestBNEqual(t *testing.T) {

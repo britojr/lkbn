@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/xml"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/britojr/lkbn/factor"
@@ -75,7 +76,11 @@ func ReadBNetXML(fname string) *BNet {
 	xmlfile := readXMLBIF(fname)
 	xmlbn := xmlfile.BNetXML
 	for i, v := range xmlbn.Variables {
-		u := vars.New(i, len(v.States), v.Name, false)
+		latent := false
+		if len(v.Latent) > 0 {
+			latent = conv.Atob(v.Latent)
+		}
+		u := vars.New(i, len(v.States), v.Name, latent)
 		b.vs.Add(u)
 	}
 	for _, p := range xmlbn.Probs {
@@ -106,7 +111,7 @@ func ReadBNetXML(fname string) *BNet {
 // XMLStruct creates a struct that can be marshalled into xmlbif format
 func (b *BNet) XMLStruct() (xmlStruct Network) {
 	for _, v := range b.Variables() {
-		xmlStruct.Variables = append(xmlStruct.Variables, Variable{Name: v.Name(), States: v.States()})
+		xmlStruct.Variables = append(xmlStruct.Variables, Variable{Name: v.Name(), States: v.States(), Latent: strconv.FormatBool(v.Latent())})
 		nd := b.Node(v)
 		p := Prob{}
 		p.For = append(p.For, nd.Variable().Name())

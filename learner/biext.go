@@ -20,8 +20,6 @@ type BIextSearch struct {
 
 	maxTimeCl int
 	maxIterCl int
-
-	props map[string]string // save parameters map
 }
 
 // NewBIextSearch creates a instance of this stragegy
@@ -42,7 +40,6 @@ func (s *BIextSearch) SetFileParameters(props map[string]string) {
 	if scoreFile, ok := props[ParmParentScores]; ok {
 		s.scoreRanker = scr.CreateRanker(scr.Read(scoreFile), s.tw)
 	}
-	s.props = props
 	// s.initOptimizer()
 	if maxTimeCl, ok := props[ParmMaxTimeCluster]; ok {
 		s.maxTimeCl = conv.Atoi(maxTimeCl)

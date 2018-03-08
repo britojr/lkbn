@@ -2,6 +2,7 @@ package learner
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/britojr/btbn/optimizer"
 	"github.com/britojr/btbn/scr"
@@ -158,6 +159,8 @@ func (s *BIextSearch) buildExtStructures() (*model.BNet, *model.CTree) {
 
 		queue = queue[1:]
 	}
+	reduceLatentCard(bn.Variables(), s.tw)
+
 	return bn, ct
 }
 
@@ -169,4 +172,18 @@ func createCTNode(ct *model.CTree, pot *factor.Factor, parents vars.VarList) {
 		pa.AddChild(nd)
 	}
 	ct.AddNode(nd)
+}
+
+// reduce latent variable cardinality
+func reduceLatentCard(vs vars.VarList, tw int) {
+	for _, v := range vs {
+		if v.Latent() {
+			c := int(math.Floor(float64(v.NState()) / math.Pow(2, float64(tw))))
+			if c < 2 {
+				v.SetNState(2)
+			} else {
+				v.SetNState(c)
+			}
+		}
+	}
 }

@@ -34,7 +34,7 @@ func main() {
 	dataSet := data.NewDataset(dataFile)
 
 	log.Println("Reading model structure")
-	ct := model.ReadCTreeYAML(modelFIn)
+	ct := model.ReadCTreeXML(modelFIn)
 	// check variable ordering
 	for i, v := range dataSet.Variables() {
 		if ct.Variables()[i].Name() != v.Name() {

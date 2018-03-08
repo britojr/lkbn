@@ -36,7 +36,9 @@ func ComputeLL(ct *model.CTree, intMaps []map[int]int) float64 {
 	for _, evid := range intMaps {
 		evLkhood := infalg.Run(evid)
 		if evLkhood == 0 {
-			log.Panicf("scores: invalid prob of evidence == 0")
+			// log.Panicf("scores: invalid prob of evidence == 0")
+			log.Printf("scores: invalid prob of evidence == 0")
+			continue
 		}
 		ll += math.Log(evLkhood)
 	}

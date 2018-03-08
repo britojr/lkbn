@@ -25,6 +25,7 @@ const (
 
 	ParmMaxTimeCluster = "max_time_per_cluster"
 	ParmMaxIterCluster = "max_iter_per_cluster"
+	ParmCardReduction  = "card_reduction"
 )
 
 // Learner defines a structure learner algorithm

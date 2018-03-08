@@ -1,12 +1,12 @@
 package learner
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/britojr/btbn/optimizer"
 	"github.com/britojr/btbn/scr"
 	"github.com/britojr/lkbn/factor"
+	"github.com/britojr/lkbn/inference"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
 	"github.com/britojr/utl/conv"
@@ -19,8 +19,9 @@ type BIextSearch struct {
 	scoreRanker scr.Ranker
 	iterAlg     optimizer.Optimizer
 
-	maxTimeCl int
-	maxIterCl int
+	maxTimeCl  int
+	maxIterCl  int
+	cardReduct int
 }
 
 // NewBIextSearch creates a instance of this stragegy
@@ -48,19 +49,15 @@ func (s *BIextSearch) SetFileParameters(props map[string]string) {
 	if maxIterCl, ok := props[ParmMaxIterCluster]; ok {
 		s.maxIterCl = conv.Atoi(maxIterCl)
 	}
+	if cardReduct, ok := props[ParmCardReduction]; ok {
+		s.cardReduct = conv.Atoi(cardReduct)
+	}
 }
 
 // Search searches for a network structure
 func (s *BIextSearch) Search() Solution {
-	bn, ct := s.buildExtStructures()
-	bn.SetCTree(ct)
-	// TODO:
-	// - learn parameters for clique tree
-	// - use the learned ctree to set bnet parameters
-	// - compute scores
-	//
-	// log.Printf("--------------------------------------------------\n")
-	// log.Printf("LL: %.6f\n", bn.Score())
+	bn := s.buildExtStructures()
+	s.learnParameters(bn)
 	return bn
 }
 
@@ -69,6 +66,20 @@ func (s *BIextSearch) initOptimizer() {
 	s.iterAlg.SetDefaultParameters()
 	s.iterAlg.SetFileParameters(s.props)
 	s.iterAlg.ValidateParameters()
+}
+
+func (s *BIextSearch) learnParameters(bn *model.BNet) {
+	ct, _, _ := s.paramLearner.Run(bn.CTree(), s.ds.IntMaps())
+	infalg := inference.NewCTreeCalibration(ct)
+	infalg.Run(nil)
+	for _, v := range bn.Variables() {
+		family := bn.Node(v).Potential().Variables()
+		nd := ct.FindHighestNodeContaining(family)
+		q, _ := infalg.CalibPotential(nd).Copy().Normalize(v)
+		bn.Node(v).SetPotential(q)
+	}
+	bn.SetCTree(ct)
+	bn.SetScore(ct.Score())
 }
 
 func findRoot(bn *model.BNet) *vars.Var {
@@ -97,7 +108,7 @@ func listIDs(vs []*vars.Var) []int {
 	return is
 }
 
-func (s *BIextSearch) buildExtStructures() (*model.BNet, *model.CTree) {
+func (s *BIextSearch) buildExtStructures() *model.BNet {
 	queue := []*vars.Var{findRoot(s.bn)}
 	bn := model.NewBNet()
 	ct := model.NewCTree()
@@ -115,20 +126,12 @@ func (s *BIextSearch) buildExtStructures() (*model.BNet, *model.CTree) {
 				chs.Remove(v.ID())
 			}
 		}
-		fmt.Println(chs)
 		s.initOptimizer() // TODO: create a new optimizer because unwanted colateral from timeout
 		s.iterAlg.(*optimizer.IterativeSearch).SetVarsSubSet(listIDs(chs))
 		bnStruct := optimizer.Search(s.iterAlg, s.maxIterCl, s.maxTimeCl)
 		ord := bnStruct.Topological()
 
-		fmt.Println("structure")
-		fmt.Println(bnStruct)
-		fmt.Println("Ordering")
-		fmt.Println(ord)
-		fmt.Println()
-
 		scopes := make(map[int]vars.VarList)
-		fmt.Println("\tscopes:")
 		for _, u := range chs {
 			nd := model.NewBNode(u)
 			parents := bnStruct.Parents(u.ID()).DumpAsInts()
@@ -140,28 +143,24 @@ func (s *BIextSearch) buildExtStructures() (*model.BNet, *model.CTree) {
 			nd.SetPotential(factor.New(scope...))
 			bn.AddNode(nd)
 			scopes[u.ID()] = nd.Potential().Variables()
-			fmt.Printf("\t[%v]: %v\n", u.Name(), scopes[u.ID()])
 		}
 
-		fmt.Println("\ttreeNodes:")
 		p := factor.New()
 		for _, v := range ord[:s.Treewidth()+1] {
 			p.Times(bn.Node(vs.FindByID(v)).Potential())
 		}
 		createCTNode(ct, p, vars.VarList{v})
-		fmt.Printf("\t[r]%v\n", p.Variables())
 		for _, v := range ord[s.Treewidth()+1:] {
 			u := vs.FindByID(v)
 			p := factor.New(scopes[u.ID()]...)
 			createCTNode(ct, p, scopes[u.ID()].Diff(vars.VarList{u}))
-			fmt.Printf("\t[%v]%v\n", u.Name(), p.Variables())
 		}
 
 		queue = queue[1:]
 	}
-	reduceLatentCard(bn.Variables(), s.tw)
-
-	return bn, ct
+	bn.SetCTree(ct)
+	reduceLatentCard(bn, s.tw, 2)
+	return bn
 }
 
 func createCTNode(ct *model.CTree, pot *factor.Factor, parents vars.VarList) {
@@ -175,15 +174,21 @@ func createCTNode(ct *model.CTree, pot *factor.Factor, parents vars.VarList) {
 }
 
 // reduce latent variable cardinality
-func reduceLatentCard(vs vars.VarList, tw int) {
-	for _, v := range vs {
+func reduceLatentCard(bn *model.BNet, tw, reduction int) {
+	for _, v := range bn.Variables() {
 		if v.Latent() {
-			c := int(math.Floor(float64(v.NState()) / math.Pow(2, float64(tw))))
+			c := int(math.Floor(float64(v.NState()) / math.Pow(2, float64(tw-reduction))))
 			if c < 2 {
 				v.SetNState(2)
 			} else {
 				v.SetNState(c)
 			}
 		}
+	}
+	for _, v := range bn.Variables() {
+		bn.Node(v).SetPotential(factor.New(bn.Node(v).Potential().Variables()...))
+	}
+	for _, nd := range bn.CTree().Nodes() {
+		nd.SetPotential(factor.New(nd.Variables()...))
 	}
 }

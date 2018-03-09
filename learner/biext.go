@@ -78,6 +78,8 @@ func (s *BIextSearch) initOptimizer() {
 }
 
 func (s *BIextSearch) learnParameters(bn *model.BNet) {
+	log.Printf("--------------------------------------------------\n")
+	log.Printf("Learning parameters\n")
 	ct, _, _ := s.paramLearner.Run(bn.CTree(), s.ds.IntMaps())
 	infalg := inference.NewCTreeCalibration(ct)
 	infalg.Run(nil)
@@ -187,6 +189,7 @@ func reduceLatentCard(bn *model.BNet, tw, reduction int) {
 	for _, v := range bn.Variables() {
 		if v.Latent() {
 			c := int(math.Floor(float64(v.NState()) / math.Pow(2, float64(tw-reduction))))
+			log.Printf("card[%v] <- %v,  was %v\n", v.Name(), c, v.NState())
 			if c < 2 {
 				v.SetNState(2)
 			} else {

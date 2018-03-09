@@ -1,6 +1,7 @@
 package learner
 
 import (
+	"log"
 	"math"
 
 	"github.com/britojr/btbn/optimizer"
@@ -52,6 +53,14 @@ func (s *BIextSearch) SetFileParameters(props map[string]string) {
 	if cardReduct, ok := props[ParmCardReduction]; ok {
 		s.cardReduct = conv.Atoi(cardReduct)
 	}
+}
+
+func (s *BIextSearch) PrintParameters() {
+	s.common.PrintParameters()
+	log.Printf("%v: %v\n", ParmMaxTimeCluster, s.maxTimeCl)
+	log.Printf("%v: %v\n", ParmMaxIterCluster, s.maxIterCl)
+	log.Printf("%v: %v\n", ParmCardReduction, s.cardReduct)
+	log.Printf("--------------------------------------------------\n")
 }
 
 // Search searches for a network structure
@@ -159,7 +168,7 @@ func (s *BIextSearch) buildExtStructures() *model.BNet {
 		queue = queue[1:]
 	}
 	bn.SetCTree(ct)
-	reduceLatentCard(bn, s.tw, 2)
+	reduceLatentCard(bn, s.tw, s.cardReduct)
 	return bn
 }
 

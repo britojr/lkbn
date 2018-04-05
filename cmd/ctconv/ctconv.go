@@ -90,12 +90,13 @@ func writeBif(ct *model.CTree, fname string) {
 				p.Reduce(attrbMap).SumOut(pavs...)
 				tableInd := strings.Join(attrbStr, ", ")
 				tableVal := strings.Join(conv.Sftoa(p.Values()), ", ")
-				fmt.Fprintf(f, "  (%v) %v;\n", tableInd, tableVal)
+				fmt.Fprintf(f, "  (%v) %v;\n", tableInd, strings.Replace(tableVal, "E+00", "", -1))
 				ixf.Next()
 			}
 		} else {
 			fmt.Fprintf(f, "probability ( %v ) {\n", strings.Join(varNames(nd.Variables()), ", "))
-			fmt.Fprintf(f, "  table %v;\n", strings.Join(conv.Sftoa(nd.Potential().Values()), ", "))
+			tableVal := strings.Join(conv.Sftoa(nd.Potential().Values()), ", ")
+			fmt.Fprintf(f, "  table %v;\n", strings.Replace(tableVal, "E+00", "", -1))
 		}
 		fmt.Fprintf(f, "}\n")
 	}

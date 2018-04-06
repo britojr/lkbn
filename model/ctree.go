@@ -198,6 +198,9 @@ func (c *CTree) XMLStruct() (ctStruct Network) {
 func ReadCTreeXML(fname string) *CTree {
 	c := new(CTree)
 	xmlct := readXMLBIF(fname).CTreeXML
+	if len(xmlct.Variables) == 0 {
+		xmlct = readXMLBIF(fname).BNetXML
+	}
 	vm := make(map[string]*vars.Var)
 	for i, xv := range xmlct.Variables {
 		v := vars.New(i, len(xv.States), xv.Name, conv.Atob(xv.Latent))

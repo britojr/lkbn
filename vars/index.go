@@ -41,6 +41,16 @@ func (ix *Index) Attribution() map[int]int {
 	return m
 }
 
+// AttrbIndex returns the index of an attribution
+func (ix *Index) AttrbIndex(m map[int]int) (idx int) {
+	for i, v := range ix.vs {
+		if attr, ok := m[v.ID()]; ok {
+			idx += ix.stride[i] * attr
+		}
+	}
+	return
+}
+
 // Ended if index reached end value
 func (ix *Index) Ended() bool {
 	return ix.current < 0

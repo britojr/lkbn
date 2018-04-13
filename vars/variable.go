@@ -15,13 +15,13 @@ type Var struct {
 	id, nstate int
 	name       string
 	latent     bool
+	states     []string
 }
 
 // New creates a new variable
 func New(id, nstate int, name string, latent bool) (v *Var) {
 	v = new(Var)
 	v.id = id
-	v.nstate = nstate
 	v.name = name
 	v.latent = latent
 	if name == "" {
@@ -31,6 +31,7 @@ func New(id, nstate int, name string, latent bool) (v *Var) {
 			v.name = fmt.Sprintf("X%v", id)
 		}
 	}
+	v.SetNState(nstate)
 	return
 }
 
@@ -47,6 +48,16 @@ func (v Var) NState() int {
 // SetNState set variable num states
 func (v *Var) SetNState(nstate int) {
 	v.nstate = nstate
+	v.states = make([]string, nstate)
+	for i := range v.states {
+		v.states[i] = strconv.Itoa(i)
+	}
+}
+
+// SetStates set variable states names
+func (v *Var) SetStates(states []string) {
+	v.nstate = len(states)
+	v.states = append([]string(nil), states...)
 }
 
 // Name return variable's name
@@ -74,8 +85,14 @@ func (v Var) String() string {
 }
 
 func (v Var) States() (s []string) {
-	for i := 0; i < v.NState(); i++ {
-		s = append(s, strconv.Itoa(i))
+	return v.states
+}
+
+func (v Var) StateID(name string) int {
+	for i, n := range v.states {
+		if n == name {
+			return i
+		}
 	}
-	return
+	return -1
 }

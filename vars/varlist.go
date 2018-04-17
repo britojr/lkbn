@@ -179,6 +179,15 @@ func (vl VarList) FindByID(id int) *Var {
 	return nil
 }
 
+// DumpAsInts returns a slice with list ids
+func (vl VarList) DumpAsInts() []int {
+	s := make([]int, len(vl))
+	for i, v := range vl {
+		s[i] = v.ID()
+	}
+	return s
+}
+
 // IntersecID returns new list with elements present in vl and in ids
 // func (vl VarList) IntersecID(ids ...int) (w VarList) {
 // 	sort.Ints(ids)

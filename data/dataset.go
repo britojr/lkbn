@@ -19,11 +19,16 @@ type Dataset struct {
 }
 
 // NewDataset return a new dataset type
-func NewDataset(fname string) (d *Dataset) {
+func NewDataset(fname string, hasHdr ...bool) (d *Dataset) {
+	// TODO: add more options to dataset reading
 	f := ioutl.OpenFile(fname)
 	defer f.Close()
 	d = new(Dataset)
-	d.df = dataframe.ReadCSV(bufio.NewReader(f))
+	if len(hasHdr) > 0 {
+		d.df = dataframe.ReadCSV(bufio.NewReader(f), dataframe.HasHeader(hasHdr[0]))
+	} else {
+		d.df = dataframe.ReadCSV(bufio.NewReader(f))
+	}
 	for id, name := range d.df.Names() {
 		nstate := int(d.df.Col(name).Max()) + 1
 		v := vars.New(id, nstate, name, false)

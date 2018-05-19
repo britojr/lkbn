@@ -68,7 +68,7 @@ func runCTLearner() {
 		props[learner.ParmInputNet] = modelFIn
 	}
 	log.Println("Reading dataset file")
-	dataSet := data.NewDataset(dataFile)
+	dataSet := data.NewDataset(dataFile, "")
 
 	log.Println("Initializing learning algorithm")
 	alg := learner.Create(learnerAlg)
@@ -111,7 +111,7 @@ func runCTParamLearner() {
 		props = ioutl.ReadYaml(parmFile)
 	}
 	log.Println("Reading dataset file")
-	dataSet := data.NewDataset(dataFile)
+	dataSet := data.NewDataset(dataFile, "")
 
 	log.Println("Reading model structure")
 	ct := model.ReadCTreeXML(modelFIn)

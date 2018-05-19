@@ -34,7 +34,7 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
-	ds := data.NewDataset(dataFile)
+	ds := data.NewDataset(dataFile, "")
 	mutInfo := scr.ComputeMutInf(dataFile)
 
 	var props map[string]string

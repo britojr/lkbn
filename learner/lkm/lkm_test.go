@@ -143,7 +143,7 @@ func TestLearnLKM1L(t *testing.T) {
 			[]*vars.Var{vs[0], vs[9], vs[10]},
 		},
 		vars.New(len(vs), 2, "", true),
-		data.NewDataset(fname),
+		data.NewDataset(fname, ""),
 		5,
 	}}
 	for _, tt := range cases {

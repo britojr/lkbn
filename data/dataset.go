@@ -3,8 +3,10 @@ package data
 
 import (
 	"bufio"
+	"strings"
 
 	"github.com/britojr/lkbn/vars"
+	"github.com/britojr/utl/conv"
 	"github.com/britojr/utl/errchk"
 	"github.com/britojr/utl/ioutl"
 	"github.com/kniren/gota/dataframe"
@@ -19,7 +21,7 @@ type Dataset struct {
 }
 
 // NewDataset return a new dataset type
-func NewDataset(fname string, hasHdr ...bool) (d *Dataset) {
+func NewDataset(fname, hdrFile string, hasHdr ...bool) (d *Dataset) {
 	// TODO: add more options to dataset reading
 	f := ioutl.OpenFile(fname)
 	defer f.Close()
@@ -29,8 +31,37 @@ func NewDataset(fname string, hasHdr ...bool) (d *Dataset) {
 	} else {
 		d.df = dataframe.ReadCSV(bufio.NewReader(f))
 	}
+	schema, names := []int{}, []string{}
+	if len(hdrFile) > 0 {
+		r := ioutl.OpenFile(hdrFile)
+		defer r.Close()
+		var lines [][]string
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			if len(scanner.Text()) == 0 {
+				continue
+			}
+			lines = append(lines, strings.Split(scanner.Text(), ","))
+		}
+		if len(lines) == 1 {
+			schema = conv.Satoi(lines[0])
+		} else {
+			if len(lines) > 1 {
+				names = lines[0]
+				schema = conv.Satoi(lines[1])
+			}
+		}
+	}
+	if len(names) > 0 {
+		d.df.SetNames(names...)
+	}
 	for id, name := range d.df.Names() {
-		nstate := int(d.df.Col(name).Max()) + 1
+		var nstate int
+		if id < len(schema) {
+			nstate = schema[id]
+		} else {
+			nstate = int(d.df.Col(name).Max()) + 1
+		}
 		v := vars.New(id, nstate, name, false)
 		d.vs = append(d.vs, v)
 	}

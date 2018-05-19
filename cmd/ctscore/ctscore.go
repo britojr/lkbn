@@ -14,9 +14,10 @@ import (
 
 // computes the scores of a given structure
 func main() {
-	var dataFile, modelFIn string
+	var dataFile, modelFIn, hdrFile string
 	flag.StringVar(&dataFile, "d", "", "dataset file in csv format")
 	flag.StringVar(&modelFIn, "b", "", "network input file")
+	flag.StringVar(&hdrFile, "hdr", "", "header file with ordered names and num states")
 
 	flag.Parse()
 	if len(dataFile) == 0 {
@@ -31,7 +32,7 @@ func main() {
 	log.Printf("--------------------------------------------------\n")
 
 	log.Println("Reading dataset file")
-	dataSet := data.NewDataset(dataFile)
+	dataSet := data.NewDataset(dataFile, hdrFile, false)
 
 	log.Println("Reading model structure")
 	ct := model.ReadCTreeXML(modelFIn)

@@ -40,7 +40,7 @@ func main() {
 	}
 	var vs vars.VarList
 	if len(dataFile) != 0 {
-		vs = data.NewDataset(dataFile).Variables()
+		vs = data.NewDataset(dataFile, "").Variables()
 	} else {
 		vs = []*vars.Var{}
 	}

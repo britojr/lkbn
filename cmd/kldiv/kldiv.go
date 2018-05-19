@@ -32,7 +32,7 @@ func main() {
 	log.Printf("KL-Divergence: %E\n", scores.KLDiv(orgNet, compNet))
 	log.Printf("KLDiv brute force: %E\n", scores.KLDivBruteForce(orgNet, compNet))
 	if len(dsFile) > 0 {
-		ds := data.NewDataset(dsFile)
+		ds := data.NewDataset(dsFile, "")
 		log.Printf("KLDiv empirical: %E\n", scores.KLDivEmpirical(orgNet, compNet, ds.IntMaps()))
 		log.Printf("KLDiv empirical no inf: %E\n", scores.KLDivEmpNoInf(orgNet, compNet, ds.IntMaps()))
 	}
